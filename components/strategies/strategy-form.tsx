@@ -4,14 +4,19 @@ import { FormEvent, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Banner } from '@/components/ui/banner';
+import { Select } from '@/components/ui/select';
 import { ConditionBlockEditor } from './condition-editor';
 import { RiskConfigForm } from './risk-config-form';
+import { StrategyChartPreview } from './strategy-chart-preview';
 import { api, ApiError, IndicatorCatalog, Segment, StrategyInput, ValidationResult } from '@/lib/api';
+import { EXCHANGES_BY_SEGMENT, instrumentsForSegment } from '@/lib/instruments';
 
-const selectClass =
-  'h-11 w-full rounded border border-border-strong bg-surface-sunken px-3.5 text-base text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-trust';
-
-const SEGMENTS: Segment[] = ['equity', 'fno', 'currency', 'commodity'];
+const SEGMENT_OPTIONS: { value: Segment; label: string }[] = [
+  { value: 'equity', label: 'Equity — cash market' },
+  { value: 'fno', label: 'F&O — futures & options' },
+  { value: 'currency', label: 'Currency derivatives' },
+  { value: 'commodity', label: 'Commodity' },
+];
 
 export function StrategyForm({
   initial,
@@ -86,44 +91,72 @@ export function StrategyForm({
             maxLength={1000}
           />
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <Input label="Instrument" value={input.instrument} onChange={(e) => set('instrument', e.target.value)} required />
-            <Input
-              label="Exchange"
-              value={input.exchange}
-              onChange={(e) => set('exchange', e.target.value.toUpperCase())}
+            <Select
+              label="Segment"
               required
+              value={input.segment ?? 'equity'}
+              onChange={(v) => {
+                const segment = v as Segment;
+                set('segment', segment);
+                // Keep exchange valid for the newly picked segment instead of
+                // silently carrying over one that no longer applies.
+                const validExchanges = EXCHANGES_BY_SEGMENT[segment]?.map((e) => e.value) ?? [];
+                if (!validExchanges.includes(input.exchange)) {
+                  set('exchange', validExchanges[0] ?? '');
+                }
+              }}
+              options={SEGMENT_OPTIONS}
+              searchable={false}
+              allowCustomValue={false}
             />
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-text-secondary">Segment</label>
-              <select className={selectClass} value={input.segment ?? 'equity'} onChange={(e) => set('segment', e.target.value as Segment)}>
-                {SEGMENTS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-text-secondary">Timeframe</label>
-              <select className={selectClass} value={input.timeframe} onChange={(e) => set('timeframe', e.target.value as any)}>
-                {catalog.timeframes.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Instrument"
+              required
+              value={input.instrument}
+              onChange={(v) => {
+                set('instrument', v);
+                // Picking a known instrument fills in its usual exchange automatically.
+                const match = instrumentsForSegment(input.segment ?? 'equity').find((i) => i.symbol === v);
+                if (match) set('exchange', match.exchange);
+              }}
+              options={instrumentsForSegment(input.segment ?? 'equity').map((i) => ({
+                value: i.symbol,
+                label: i.symbol,
+                sublabel: i.name,
+              }))}
+              placeholder="Search e.g. NIFTY, RELIANCE…"
+              hint="Pick from the list, or type your own symbol."
+            />
+            <Select
+              label="Exchange"
+              required
+              value={input.exchange}
+              onChange={(v) => set('exchange', v.toUpperCase())}
+              options={EXCHANGES_BY_SEGMENT[input.segment ?? 'equity'] ?? []}
+              searchable={false}
+            />
+            <Select
+              label="Timeframe"
+              required
+              value={input.timeframe}
+              onChange={(v) => set('timeframe', v as any)}
+              options={catalog.timeframes.map((t) => ({ value: t, label: t }))}
+              searchable={false}
+              allowCustomValue={false}
+            />
           </div>
-          <div className="flex flex-col gap-1.5 sm:w-64">
-            <label className="text-sm font-medium text-text-secondary">Execution mode</label>
-            <select
-              className={selectClass}
+          <div className="sm:w-64">
+            <Select
+              label="Execution mode"
               value={input.executionMode ?? 'paper'}
-              onChange={(e) => set('executionMode', e.target.value as any)}
-            >
-              <option value="paper">Paper (simulated)</option>
-              <option value="live">Live (real orders)</option>
-            </select>
+              onChange={(v) => set('executionMode', v as any)}
+              options={[
+                { value: 'paper', label: 'Paper (simulated)' },
+                { value: 'live', label: 'Live (real orders)' },
+              ]}
+              searchable={false}
+              allowCustomValue={false}
+            />
           </div>
         </section>
 
@@ -135,6 +168,11 @@ export function StrategyForm({
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">Exit conditions</h2>
           <ConditionBlockEditor block={input.exit} onChange={(exit) => set('exit', exit)} catalog={catalog} />
+        </section>
+
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">Preview</h2>
+          <StrategyChartPreview entry={input.entry} exit={input.exit} instrument={input.instrument} />
         </section>
 
         <section className="flex flex-col gap-3">

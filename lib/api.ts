@@ -334,8 +334,6 @@ export const api = {
 
   getFunds: (broker: BrokerName) => request<FundRecord>(`/funds?broker=${broker}`),
 
-  // Not yet implemented on the backend — endpoints assumed pending
-  // /auth/forgot-password and /auth/reset-password.
   forgotPassword: (input: { email: string }) =>
     request('/auth/forgot-password', { method: 'POST', body: JSON.stringify(input) }),
 
