@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ const STASH_KEY = 'zerodha_connect_pending';
 
 type State = 'connecting' | 'error';
 
-export default function ZerodhaCallbackPage() {
+function ZerodhaCallbackContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [state, setState] = useState<State>('connecting');
@@ -86,5 +86,22 @@ export default function ZerodhaCallbackPage() {
                 </Link>
             </div>
         </div>
+    );
+}
+
+export default function ZerodhaCallbackPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="flex min-h-screen items-center justify-center bg-canvas">
+                    <div className="flex flex-col items-center gap-3 text-center">
+                        <span className="h-8 w-8 animate-spin rounded-full border-2 border-accent-trust border-t-transparent" />
+                        <p className="text-base text-text-secondary">Completing your Zerodha connection…</p>
+                    </div>
+                </div>
+            }
+        >
+            <ZerodhaCallbackContent />
+        </Suspense>
     );
 }

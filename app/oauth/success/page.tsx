@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 /**
@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
  *   to finish that flow.
  * - Otherwise, session cookies are already set — just go to the dashboard.
  */
-export default function OAuthSuccessPage() {
+function OAuthSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -32,5 +32,22 @@ export default function OAuthSuccessPage() {
         <p className="text-base text-text-secondary">Finishing sign in…</p>
       </div>
     </div>
+  );
+}
+
+export default function OAuthSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-canvas">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <span className="h-8 w-8 animate-spin rounded-full border-2 border-accent-trust border-t-transparent" />
+            <p className="text-base text-text-secondary">Finishing sign in…</p>
+          </div>
+        </div>
+      }
+    >
+      <OAuthSuccessContent />
+    </Suspense>
   );
 }
