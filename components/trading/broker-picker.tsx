@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api, ApiError, BrokerConnection, BrokerName } from '@/lib/api';
+import { Select } from '@/components/ui/select';
 
 export function useConnectedBrokers() {
   const [connections, setConnections] = useState<BrokerConnection[] | null>(null);
@@ -24,9 +25,6 @@ export function useConnectedBrokers() {
   return { connections, connectedBrokers, broker, setBroker, error, loading: connections === null && !error };
 }
 
-const selectClass =
-  'h-10 rounded border border-border-strong bg-surface-sunken px-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-trust';
-
 export function BrokerSelect({
   connections,
   value,
@@ -37,13 +35,20 @@ export function BrokerSelect({
   onChange: (broker: BrokerName) => void;
 }) {
   return (
-    <select className={selectClass} value={value ?? ''} onChange={(e) => onChange(e.target.value as BrokerName)}>
-      {connections.map((c) => (
-        <option key={c.broker} value={c.broker}>
-          {c.broker.charAt(0).toUpperCase() + c.broker.slice(1)}
-          {c.clientId ? ` (${c.clientId})` : ''}
-        </option>
-      ))}
-    </select>
+    <Select
+      label="Broker"
+      hideLabel
+      size="sm"
+      triggerClassName="w-auto min-w-[10rem]"
+      searchable={false}
+      allowCustomValue={false}
+      value={value ?? ''}
+      onChange={(v) => onChange(v as BrokerName)}
+      options={connections.map((c) => ({
+        value: c.broker,
+        label: c.broker.charAt(0).toUpperCase() + c.broker.slice(1),
+        sublabel: c.clientId ?? undefined,
+      }))}
+    />
   );
 }

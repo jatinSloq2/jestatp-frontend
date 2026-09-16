@@ -1,10 +1,8 @@
 'use client';
 
 import { IndicatorCatalog, RiskConfig } from '@/lib/api';
-
-const inputClass =
-  'h-9 w-full rounded border border-border-strong bg-surface-sunken px-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-trust';
-const selectClass = inputClass;
+import { Select } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -28,66 +26,64 @@ export function RiskConfigForm({
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Field label="Capital allocated (₹)">
-          <input
-            type="number"
-            min={1}
-            className={inputClass}
-            value={value.capitalAllocated}
-            onChange={(e) => onChange({ ...value, capitalAllocated: Number(e.target.value) })}
-          />
-        </Field>
-        <Field label="Max loss / day (₹)">
-          <input
-            type="number"
-            min={1}
-            className={inputClass}
-            value={value.maxLossPerDay}
-            onChange={(e) => onChange({ ...value, maxLossPerDay: Number(e.target.value) })}
-          />
-        </Field>
-        <Field label="Max positions">
-          <input
-            type="number"
-            min={1}
-            max={50}
-            className={inputClass}
-            value={value.maxPositions}
-            onChange={(e) => onChange({ ...value, maxPositions: Number(e.target.value) })}
-          />
-        </Field>
-        <Field label="Max trades / day">
-          <input
-            type="number"
-            min={1}
-            max={500}
-            className={inputClass}
-            value={value.maxTradesPerDay}
-            onChange={(e) => onChange({ ...value, maxTradesPerDay: Number(e.target.value) })}
-          />
-        </Field>
+        <Input
+          label="Capital allocated (₹)"
+          uiSize="sm"
+          type="number"
+          min={1}
+          value={value.capitalAllocated}
+          onChange={(e) => onChange({ ...value, capitalAllocated: Number(e.target.value) })}
+        />
+        <Input
+          label="Max loss / day (₹)"
+          uiSize="sm"
+          type="number"
+          min={1}
+          value={value.maxLossPerDay}
+          onChange={(e) => onChange({ ...value, maxLossPerDay: Number(e.target.value) })}
+        />
+        <Input
+          label="Max positions"
+          uiSize="sm"
+          type="number"
+          min={1}
+          max={50}
+          value={value.maxPositions}
+          onChange={(e) => onChange({ ...value, maxPositions: Number(e.target.value) })}
+        />
+        <Input
+          label="Max trades / day"
+          uiSize="sm"
+          type="number"
+          min={1}
+          max={500}
+          value={value.maxTradesPerDay}
+          onChange={(e) => onChange({ ...value, maxTradesPerDay: Number(e.target.value) })}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Position sizing method">
           <div className="flex gap-2">
-            <select
-              className={selectClass}
+            <Select
+              label="Position sizing method"
+              hideLabel
+              size="sm"
+              searchable={false}
+              allowCustomValue={false}
+              triggerClassName="w-40"
               value={value.positionSizing.method}
-              onChange={(e) =>
-                onChange({ ...value, positionSizing: { ...value.positionSizing, method: e.target.value as any } })
+              onChange={(v) =>
+                onChange({ ...value, positionSizing: { ...value.positionSizing, method: v as any } })
               }
-            >
-              {catalog.positionSizingMethods.map((m) => (
-                <option key={m} value={m}>
-                  {m.replace(/_/g, ' ')}
-                </option>
-              ))}
-            </select>
-            <input
+              options={catalog.positionSizingMethods.map((m) => ({ value: m, label: m.replace(/_/g, ' ') }))}
+            />
+            <Input
+              label="Position sizing value"
+              hideLabel
+              uiSize="sm"
               type="number"
               min={0}
-              className={inputClass}
               value={value.positionSizing.value}
               onChange={(e) =>
                 onChange({ ...value, positionSizing: { ...value.positionSizing, value: Number(e.target.value) } })
@@ -100,22 +96,24 @@ export function RiskConfigForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Stop loss">
           <div className="flex gap-2">
-            <select
-              className={selectClass}
+            <Select
+              label="Stop loss type"
+              hideLabel
+              size="sm"
+              searchable={false}
+              allowCustomValue={false}
+              triggerClassName="w-32"
               value={value.stopLoss.type}
-              onChange={(e) => onChange({ ...value, stopLoss: { ...value.stopLoss, type: e.target.value as any } })}
-            >
-              {catalog.stopLossTargetTypes.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            <input
+              onChange={(v) => onChange({ ...value, stopLoss: { ...value.stopLoss, type: v as any } })}
+              options={catalog.stopLossTargetTypes.map((t) => ({ value: t, label: t }))}
+            />
+            <Input
+              label="Stop loss value"
+              hideLabel
+              uiSize="sm"
               type="number"
               step={0.1}
               min={0}
-              className={inputClass}
               value={value.stopLoss.value}
               onChange={(e) => onChange({ ...value, stopLoss: { ...value.stopLoss, value: Number(e.target.value) } })}
             />
@@ -124,22 +122,24 @@ export function RiskConfigForm({
 
         <Field label="Target">
           <div className="flex gap-2">
-            <select
-              className={selectClass}
+            <Select
+              label="Target type"
+              hideLabel
+              size="sm"
+              searchable={false}
+              allowCustomValue={false}
+              triggerClassName="w-32"
               value={value.target.type}
-              onChange={(e) => onChange({ ...value, target: { ...value.target, type: e.target.value as any } })}
-            >
-              {catalog.stopLossTargetTypes.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            <input
+              onChange={(v) => onChange({ ...value, target: { ...value.target, type: v as any } })}
+              options={catalog.stopLossTargetTypes.map((t) => ({ value: t, label: t }))}
+            />
+            <Input
+              label="Target value"
+              hideLabel
+              uiSize="sm"
               type="number"
               step={0.1}
               min={0}
-              className={inputClass}
               value={value.target.value}
               onChange={(e) => onChange({ ...value, target: { ...value.target, value: Number(e.target.value) } })}
             />
@@ -165,24 +165,26 @@ export function RiskConfigForm({
         </label>
         {value.trailingStopLoss?.enabled ? (
           <div className="mt-3 flex gap-2">
-            <select
-              className={selectClass}
+            <Select
+              label="Trailing stop loss type"
+              hideLabel
+              size="sm"
+              searchable={false}
+              allowCustomValue={false}
+              triggerClassName="w-32"
               value={value.trailingStopLoss.type}
-              onChange={(e) =>
-                onChange({ ...value, trailingStopLoss: { ...value.trailingStopLoss!, type: e.target.value as any } })
+              onChange={(v) =>
+                onChange({ ...value, trailingStopLoss: { ...value.trailingStopLoss!, type: v as any } })
               }
-            >
-              {catalog.stopLossTargetTypes.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            <input
+              options={catalog.stopLossTargetTypes.map((t) => ({ value: t, label: t }))}
+            />
+            <Input
+              label="Trailing stop loss value"
+              hideLabel
+              uiSize="sm"
               type="number"
               step={0.1}
               min={0}
-              className={inputClass}
               value={value.trailingStopLoss.value}
               onChange={(e) =>
                 onChange({ ...value, trailingStopLoss: { ...value.trailingStopLoss!, value: Number(e.target.value) } })
@@ -210,9 +212,12 @@ export function RiskConfigForm({
         </label>
         {value.timeBasedExit?.enabled ? (
           <div className="mt-3">
-            <input
+            <Input
+              label="Exit time"
+              hideLabel
+              uiSize="sm"
               type="time"
-              className={`${inputClass} w-32`}
+              widthClassName="w-32"
               value={value.timeBasedExit.exitTime}
               onChange={(e) => onChange({ ...value, timeBasedExit: { ...value.timeBasedExit!, exitTime: e.target.value } })}
             />

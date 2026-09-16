@@ -11,6 +11,10 @@ export interface SelectOption {
 }
 
 interface SelectProps {
+  /**
+   * Accessible label. Always required, even when `hideLabel` is set — it's
+   * what gets read to screen-reader users when the visible label is omitted.
+   */
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -29,6 +33,24 @@ interface SelectProps {
    */
   allowCustomValue?: boolean;
   className?: string;
+  /**
+   * 'md' (default) is the standard full-size form field used on strategy
+   * forms. 'sm' is a denser trigger for inline/toolbar use (condition
+   * builder rows, table filters) — matches the h-9 controls around it.
+   */
+  size?: 'md' | 'sm';
+  /**
+   * Visually hides the label (kept for screen readers via sr-only) — for
+   * spots where a neighboring label already describes the field, or where
+   * there's no room for one (inline builder rows, toolbars).
+   */
+  hideLabel?: boolean;
+  /**
+   * Overrides the trigger's width classes. Defaults to full width; pass
+   * e.g. 'w-auto min-w-[9rem]' for compact inline selects that should size
+   * to their content instead of stretching.
+   */
+  triggerClassName?: string;
 }
 
 /**
@@ -50,7 +72,11 @@ export function Select({
   searchable = true,
   allowCustomValue = true,
   className,
+  size = 'md',
+  hideLabel = false,
+  triggerClassName,
 }: SelectProps) {
+  const isSm = size === 'sm';
   const id = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -141,8 +167,8 @@ export function Select({
   }
 
   return (
-    <div className={clsx('flex flex-col gap-1.5', className)} ref={rootRef}>
-      <label htmlFor={id} className="text-sm font-medium text-text-secondary">
+    <div className={clsx('flex flex-col', isSm ? 'gap-1' : 'gap-1.5', className)} ref={rootRef}>
+      <label htmlFor={id} className={clsx(hideLabel ? 'sr-only' : clsx('font-medium text-text-secondary', isSm ? 'text-xs' : 'text-sm'))}>
         {label}
         {required ? <span className="text-pnl-negative"> *</span> : null}
       </label>
@@ -166,7 +192,9 @@ export function Select({
           }}
           onKeyDown={handleKeyDown}
           className={clsx(
-            'h-11 w-full rounded border bg-surface-sunken px-3.5 pr-9 text-base text-text-primary placeholder:text-text-tertiary',
+            'rounded border bg-surface-sunken text-text-primary placeholder:text-text-tertiary',
+            isSm ? 'h-9 px-2.5 pr-7 text-sm' : 'h-11 px-3.5 pr-9 text-base',
+            triggerClassName ?? 'w-full',
             'transition-colors duration-150 ease-confident',
             'focus:outline-none focus:ring-2 focus:ring-accent-trust focus:ring-offset-2 focus:ring-offset-canvas',
             error ? 'border-risk-critical' : 'border-border-strong focus:border-accent-trust',
@@ -174,7 +202,11 @@ export function Select({
           )}
         />
         <svg
-          className={clsx('pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary transition-transform', open && 'rotate-180')}
+          className={clsx(
+            'pointer-events-none absolute top-1/2 -translate-y-1/2 text-text-tertiary transition-transform',
+            isSm ? 'right-2 h-3.5 w-3.5' : 'right-3 h-4 w-4',
+            open && 'rotate-180',
+          )}
           viewBox="0 0 20 20"
           fill="none"
         >
@@ -185,10 +217,13 @@ export function Select({
           <ul
             ref={listRef}
             role="listbox"
-            className="absolute z-20 mt-1 max-h-60 w-full min-w-full overflow-y-auto overflow-x-hidden rounded border border-border-strong bg-surface-raised py-1 shadow-lg"
+            className={clsx(
+              'absolute z-20 mt-1 max-h-60 min-w-full overflow-y-auto overflow-x-hidden rounded border border-border-strong bg-surface-raised py-1 shadow-lg',
+              isSm ? 'w-max' : 'w-full',
+            )}
           >
             {filtered.length === 0 ? (
-              <li className="px-3.5 py-2 text-sm text-text-tertiary">
+              <li className={clsx('text-text-tertiary', isSm ? 'px-2.5 py-1.5 text-xs' : 'px-3.5 py-2 text-sm')}>
                 {allowCustomValue ? 'No matches — press Enter to use this value as typed.' : 'No matches.'}
               </li>
             ) : (
@@ -203,7 +238,8 @@ export function Select({
                   }}
                   onMouseEnter={() => setHighlighted(i)}
                   className={clsx(
-                    'flex cursor-pointer flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 px-3.5 py-2 text-sm',
+                    'flex cursor-pointer flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5',
+                    isSm ? 'px-2.5 py-1.5 text-xs' : 'px-3.5 py-2 text-sm',
                     i === highlighted ? 'bg-accent-trust/10 text-text-primary' : 'text-text-secondary',
                     option.value === value && 'font-medium text-accent-trust',
                   )}

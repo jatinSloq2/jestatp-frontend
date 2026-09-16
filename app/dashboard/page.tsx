@@ -5,6 +5,7 @@ import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { Card } from '@/components/ui/card';
 import { Banner } from '@/components/ui/banner';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { Button } from '@/components/ui/button';
 import { useUser } from '@/lib/useUser';
 
 export default function DashboardPage() {
@@ -71,20 +72,14 @@ export default function DashboardPage() {
             </p>
             <div className="mt-4 flex gap-2">
               <Link href="/brokers" className="flex-1">
-                <button
-                  type="button"
-                  className="w-full rounded bg-accent-trust px-4 py-2.5 text-sm font-medium text-text-on-accent transition-colors duration-150 ease-confident hover:bg-accent-trust-strong"
-                >
+                <Button type="button" className="w-full">
                   Connect a broker
-                </button>
+                </Button>
               </Link>
               <Link href="/strategies/new" className="flex-1">
-                <button
-                  type="button"
-                  className="w-full rounded border border-border-strong px-4 py-2.5 text-sm font-medium text-text-primary transition-colors duration-150 ease-confident hover:bg-surface-raised"
-                >
+                <Button type="button" variant="secondary" className="w-full">
                   New strategy
-                </button>
+                </Button>
               </Link>
             </div>
           </Card>

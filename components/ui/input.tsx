@@ -7,18 +7,25 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
   hint?: string;
+  /** 'md' (default): standard full-size form field. 'sm': compact h-9 trigger for inline/toolbar use (condition builder rows, table filters). Named `uiSize` (not `size`) to avoid colliding with the native `size` HTML attribute. */
+  uiSize?: 'md' | 'sm';
+  /** Visually hides the label (kept for screen readers via sr-only) — for spots where a neighboring label already describes the field. */
+  hideLabel?: boolean;
+  /** Overrides the input's width classes. Defaults to full width. */
+  widthClassName?: string;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, hint, id, type, className, ...props }, ref) => {
+  ({ label, error, hint, id, type, className, uiSize = 'md', hideLabel = false, widthClassName, ...props }, ref) => {
     const generatedId = useId();
     const inputId = id ?? generatedId;
     const [revealed, setRevealed] = useState(false);
     const isPassword = type === 'password';
+    const isSm = uiSize === 'sm';
 
     return (
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor={inputId} className="text-sm font-medium text-text-secondary">
+      <div className={clsx('flex flex-col', isSm ? 'gap-1' : 'gap-1.5')}>
+        <label htmlFor={inputId} className={clsx(hideLabel ? 'sr-only' : clsx('font-medium text-text-secondary', isSm ? 'text-xs' : 'text-sm'))}>
           {label}
         </label>
         <div className="relative">
@@ -29,7 +36,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             aria-invalid={!!error}
             aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
             className={clsx(
-              'h-11 w-full rounded border bg-surface-sunken px-3.5 text-base text-text-primary placeholder:text-text-tertiary',
+              'rounded border bg-surface-sunken text-text-primary placeholder:text-text-tertiary',
+              isSm ? 'h-9 px-2.5 text-sm' : 'h-11 px-3.5 text-base',
+              widthClassName ?? 'w-full',
               'transition-colors duration-150 ease-confident',
               'focus:outline-none focus:ring-2 focus:ring-accent-trust focus:ring-offset-2 focus:ring-offset-canvas',
               error ? 'border-risk-critical' : 'border-border-strong focus:border-accent-trust',

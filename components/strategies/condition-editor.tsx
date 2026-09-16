@@ -19,13 +19,8 @@ import {
   TimeCondition,
   VolumeCondition,
 } from '@/lib/api';
-
-const selectClass =
-  'h-9 rounded border border-border-strong bg-surface-sunken px-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-trust';
-const numberClass =
-  'h-9 w-24 rounded border border-border-strong bg-surface-sunken px-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-trust';
-const textClass =
-  'h-9 flex-1 min-w-[10rem] rounded border border-border-strong bg-surface-sunken px-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-trust';
+import { Select } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 
 const OPERATOR_LABELS: Record<Operator, string> = {
   '>': 'greater than',
@@ -106,31 +101,34 @@ function IndicatorRefEditor({
   const spec = catalog.indicators.find((i) => i.name === value.indicator) ?? catalog.indicators[0];
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <select
-        className={selectClass}
+      <Select
+        label="Indicator"
+        hideLabel
+        size="sm"
+        searchable={false}
+        allowCustomValue={false}
+        triggerClassName="w-auto min-w-[8rem]"
         value={value.indicator}
-        onChange={(e) => {
-          const name = e.target.value as IndicatorName;
+        onChange={(v) => {
+          const name = v as IndicatorName;
           const newSpec = catalog.indicators.find((i) => i.name === name)!;
           onChange({ indicator: name, params: Object.fromEntries(newSpec.params.map((p) => [p.name, p.default])) });
         }}
-      >
-        {catalog.indicators.map((i) => (
-          <option key={i.name} value={i.name}>
-            {i.name}
-          </option>
-        ))}
-      </select>
+        options={catalog.indicators.map((i) => ({ value: i.name, label: i.name }))}
+      />
       {spec.params.map((p) => (
         <Field key={p.name} label={p.name}>
-          <input
+          <Input
+            label={p.name}
+            hideLabel
+            uiSize="sm"
             type="number"
             step={p.type === 'float' ? 0.1 : 1}
             min={p.min}
             max={p.max}
+            widthClassName="w-16"
             value={value.params?.[p.name] ?? p.default}
             onChange={(e) => onChange({ ...value, params: { ...value.params, [p.name]: Number(e.target.value) } })}
-            className={numberClass.replace('w-24', 'w-16')}
           />
         </Field>
       ))}
@@ -153,9 +151,9 @@ function OperandEditor({
     const [lo, hi] = Array.isArray(value) ? value : [0, 0];
     return (
       <div className="flex items-center gap-2">
-        <input type="number" className={numberClass} value={lo} onChange={(e) => onChange([Number(e.target.value), hi])} />
+        <Input label="Lower bound" hideLabel uiSize="sm" type="number" widthClassName="w-24" value={lo} onChange={(e) => onChange([Number(e.target.value), hi])} />
         <span className="text-xs text-text-tertiary">and</span>
-        <input type="number" className={numberClass} value={hi} onChange={(e) => onChange([lo, Number(e.target.value)])} />
+        <Input label="Upper bound" hideLabel uiSize="sm" type="number" widthClassName="w-24" value={hi} onChange={(e) => onChange([lo, Number(e.target.value)])} />
       </div>
     );
   }
@@ -183,9 +181,12 @@ function OperandEditor({
       {isIndicatorRef ? (
         <IndicatorRefEditor value={value as IndicatorRef} onChange={onChange} catalog={catalog} />
       ) : (
-        <input
+        <Input
+          label="Value"
+          hideLabel
+          uiSize="sm"
           type="number"
-          className={numberClass}
+          widthClassName="w-24"
           value={typeof value === 'number' ? value : 0}
           onChange={(e) => onChange(Number(e.target.value))}
         />
@@ -220,13 +221,17 @@ function ConditionFields({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-text-tertiary">is</span>
-            <select className={selectClass} value={c.operator} onChange={(e) => onChange({ ...c, operator: e.target.value as Operator })}>
-              {catalog.operators.map((op) => (
-                <option key={op} value={op}>
-                  {OPERATOR_LABELS[op]}
-                </option>
-              ))}
-            </select>
+            <Select
+              label="Operator"
+              hideLabel
+              size="sm"
+              searchable={false}
+              allowCustomValue={false}
+              triggerClassName="w-auto min-w-[9rem]"
+              value={c.operator}
+              onChange={(v) => onChange({ ...c, operator: v as Operator })}
+              options={catalog.operators.map((op) => ({ value: op, label: OPERATOR_LABELS[op] }))}
+            />
             <OperandEditor operator={c.operator} value={c.value} onChange={(v) => onChange({ ...c, value: v })} catalog={catalog} />
           </div>
         </div>
@@ -238,22 +243,30 @@ function ConditionFields({
       return (
         <div className="flex flex-wrap items-center gap-2">
           <Field label="Field">
-            <select className={selectClass} value={c.field} onChange={(e) => onChange({ ...c, field: e.target.value as any })}>
-              {['open', 'high', 'low', 'close'].map((f) => (
-                <option key={f} value={f}>
-                  {f}
-                </option>
-              ))}
-            </select>
+            <Select
+              label="Field"
+              hideLabel
+              size="sm"
+              searchable={false}
+              allowCustomValue={false}
+              triggerClassName="w-24"
+              value={c.field}
+              onChange={(v) => onChange({ ...c, field: v as any })}
+              options={['open', 'high', 'low', 'close'].map((f) => ({ value: f, label: f }))}
+            />
           </Field>
           <span className="text-xs text-text-tertiary">is</span>
-          <select className={selectClass} value={c.operator} onChange={(e) => onChange({ ...c, operator: e.target.value as Operator })}>
-            {catalog.operators.map((op) => (
-              <option key={op} value={op}>
-                {OPERATOR_LABELS[op]}
-              </option>
-            ))}
-          </select>
+          <Select
+            label="Operator"
+            hideLabel
+            size="sm"
+            searchable={false}
+            allowCustomValue={false}
+            triggerClassName="w-auto min-w-[9rem]"
+            value={c.operator}
+            onChange={(v) => onChange({ ...c, operator: v as Operator })}
+            options={catalog.operators.map((op) => ({ value: op, label: OPERATOR_LABELS[op] }))}
+          />
           <OperandEditor operator={c.operator} value={c.value} onChange={(v) => onChange({ ...c, value: v })} catalog={catalog} />
         </div>
       );
@@ -265,13 +278,17 @@ function ConditionFields({
       return (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-text-tertiary">Volume is</span>
-          <select className={selectClass} value={c.operator} onChange={(e) => onChange({ ...c, operator: e.target.value as Operator })}>
-            {catalog.operators.map((op) => (
-              <option key={op} value={op}>
-                {OPERATOR_LABELS[op]}
-              </option>
-            ))}
-          </select>
+          <Select
+            label="Operator"
+            hideLabel
+            size="sm"
+            searchable={false}
+            allowCustomValue={false}
+            triggerClassName="w-auto min-w-[9rem]"
+            value={c.operator}
+            onChange={(v) => onChange({ ...c, operator: v as Operator })}
+            options={catalog.operators.map((op) => ({ value: op, label: OPERATOR_LABELS[op] }))}
+          />
           <div className="flex overflow-hidden rounded border border-border-strong text-xs">
             <button
               type="button"
@@ -290,19 +307,25 @@ function ConditionFields({
           </div>
           {isAvg ? (
             <Field label="over N candles">
-              <input
+              <Input
+                label="Number of candles"
+                hideLabel
+                uiSize="sm"
                 type="number"
                 min={2}
                 max={500}
-                className={numberClass.replace('w-24', 'w-16')}
+                widthClassName="w-16"
                 value={(c.compareTo as any).period}
                 onChange={(e) => onChange({ ...c, compareTo: { type: 'average_volume', period: Number(e.target.value) } })}
               />
             </Field>
           ) : (
-            <input
+            <Input
+              label="Volume"
+              hideLabel
+              uiSize="sm"
               type="number"
-              className={numberClass}
+              widthClassName="w-24"
               value={c.compareTo as number}
               onChange={(e) => onChange({ ...c, compareTo: Number(e.target.value) })}
             />
@@ -316,20 +339,27 @@ function ConditionFields({
       return (
         <div className="flex flex-wrap items-center gap-2">
           <Field label="Pattern">
-            <select className={selectClass} value={c.pattern} onChange={(e) => onChange({ ...c, pattern: e.target.value as any })}>
-              {catalog.candlePatterns.map((p) => (
-                <option key={p} value={p}>
-                  {p.replace(/_/g, ' ')}
-                </option>
-              ))}
-            </select>
+            <Select
+              label="Pattern"
+              hideLabel
+              size="sm"
+              searchable={false}
+              allowCustomValue={false}
+              triggerClassName="w-auto min-w-[9rem]"
+              value={c.pattern}
+              onChange={(v) => onChange({ ...c, pattern: v as any })}
+              options={catalog.candlePatterns.map((p) => ({ value: p, label: p.replace(/_/g, ' ') }))}
+            />
           </Field>
           <Field label="Lookback candles">
-            <input
+            <Input
+              label="Lookback candles"
+              hideLabel
+              uiSize="sm"
               type="number"
               min={1}
               max={20}
-              className={numberClass.replace('w-24', 'w-16')}
+              widthClassName="w-16"
               value={c.lookback ?? 1}
               onChange={(e) => onChange({ ...c, lookback: Number(e.target.value) })}
             />
@@ -343,31 +373,41 @@ function ConditionFields({
       return (
         <div className="flex flex-wrap items-center gap-2">
           <Field label="Level">
-            <select className={selectClass} value={c.level} onChange={(e) => onChange({ ...c, level: e.target.value as any })}>
-              {catalog.breakoutLevels.map((l) => (
-                <option key={l} value={l}>
-                  {l}
-                </option>
-              ))}
-            </select>
+            <Select
+              label="Level"
+              hideLabel
+              size="sm"
+              searchable={false}
+              allowCustomValue={false}
+              triggerClassName="w-auto min-w-[8rem]"
+              value={c.level}
+              onChange={(v) => onChange({ ...c, level: v as any })}
+              options={catalog.breakoutLevels.map((l) => ({ value: l, label: l }))}
+            />
           </Field>
           <Field label="Lookback period">
-            <input
+            <Input
+              label="Lookback period"
+              hideLabel
+              uiSize="sm"
               type="number"
               min={2}
               max={500}
-              className={numberClass.replace('w-24', 'w-16')}
+              widthClassName="w-16"
               value={c.lookbackPeriod}
               onChange={(e) => onChange({ ...c, lookbackPeriod: Number(e.target.value) })}
             />
           </Field>
           <Field label="Buffer %">
-            <input
+            <Input
+              label="Buffer %"
+              hideLabel
+              uiSize="sm"
               type="number"
               step={0.1}
               min={0}
               max={10}
-              className={numberClass.replace('w-24', 'w-16')}
+              widthClassName="w-16"
               value={c.bufferPercent ?? 0}
               onChange={(e) => onChange({ ...c, bufferPercent: Number(e.target.value) })}
             />
@@ -381,18 +421,31 @@ function ConditionFields({
       return (
         <div className="flex flex-wrap items-center gap-2">
           <Field label="Level">
-            <select className={selectClass} value={c.level} onChange={(e) => onChange({ ...c, level: e.target.value as any })}>
-              <option value="support">support</option>
-              <option value="resistance">resistance</option>
-            </select>
+            <Select
+              label="Level"
+              hideLabel
+              size="sm"
+              searchable={false}
+              allowCustomValue={false}
+              triggerClassName="w-28"
+              value={c.level}
+              onChange={(v) => onChange({ ...c, level: v as any })}
+              options={[
+                { value: 'support', label: 'support' },
+                { value: 'resistance', label: 'resistance' },
+              ]}
+            />
           </Field>
           <Field label="Proximity %">
-            <input
+            <Input
+              label="Proximity %"
+              hideLabel
+              uiSize="sm"
               type="number"
               step={0.1}
               min={0}
               max={10}
-              className={numberClass.replace('w-24', 'w-16')}
+              widthClassName="w-16"
               value={c.proximityPercent}
               onChange={(e) => onChange({ ...c, proximityPercent: Number(e.target.value) })}
             />
@@ -407,39 +460,54 @@ function ConditionFields({
       return (
         <div className="flex flex-wrap items-center gap-2">
           <Field label="When">
-            <select
-              className={selectClass}
+            <Select
+              label="When"
+              hideLabel
+              size="sm"
+              searchable={false}
+              allowCustomValue={false}
+              triggerClassName="w-28"
               value={c.operator}
-              onChange={(e) => {
-                const op = e.target.value as TimeCondition['operator'];
+              onChange={(v) => {
+                const op = v as TimeCondition['operator'];
                 onChange({ ...c, operator: op, value: op === 'between' ? ['09:15', '15:15'] : '09:15' } as TimeCondition);
               }}
-            >
-              <option value="before">before</option>
-              <option value="after">after</option>
-              <option value="between">between</option>
-            </select>
+              options={[
+                { value: 'before', label: 'before' },
+                { value: 'after', label: 'after' },
+                { value: 'between', label: 'between' },
+              ]}
+            />
           </Field>
           {isBetween ? (
             <>
-              <input
+              <Input
+                label="From time"
+                hideLabel
+                uiSize="sm"
                 type="time"
-                className={textClass.replace('flex-1 min-w-[10rem]', 'w-28')}
+                widthClassName="w-28"
                 value={(c.value as [string, string])[0]}
                 onChange={(e) => onChange({ ...c, value: [e.target.value, (c.value as [string, string])[1]] })}
               />
               <span className="text-xs text-text-tertiary">and</span>
-              <input
+              <Input
+                label="To time"
+                hideLabel
+                uiSize="sm"
                 type="time"
-                className={textClass.replace('flex-1 min-w-[10rem]', 'w-28')}
+                widthClassName="w-28"
                 value={(c.value as [string, string])[1]}
                 onChange={(e) => onChange({ ...c, value: [(c.value as [string, string])[0], e.target.value] })}
               />
             </>
           ) : (
-            <input
+            <Input
+              label="Time"
+              hideLabel
+              uiSize="sm"
               type="time"
-              className={textClass.replace('flex-1 min-w-[10rem]', 'w-28')}
+              widthClassName="w-28"
               value={c.value as string}
               onChange={(e) => onChange({ ...c, value: e.target.value })}
             />
@@ -452,13 +520,17 @@ function ConditionFields({
       const c = condition as MarketConditionCondition;
       return (
         <Field label="Market is">
-          <select className={selectClass} value={c.condition} onChange={(e) => onChange({ ...c, condition: e.target.value as any })}>
-            {catalog.marketConditions.map((m) => (
-              <option key={m} value={m}>
-                {m.replace(/_/g, ' ')}
-              </option>
-            ))}
-          </select>
+          <Select
+            label="Market is"
+            hideLabel
+            size="sm"
+            searchable={false}
+            allowCustomValue={false}
+            triggerClassName="w-auto min-w-[9rem]"
+            value={c.condition}
+            onChange={(v) => onChange({ ...c, condition: v as any })}
+            options={catalog.marketConditions.map((m) => ({ value: m, label: m.replace(/_/g, ' ') }))}
+          />
         </Field>
       );
     }
@@ -467,9 +539,12 @@ function ConditionFields({
       const c = condition as CustomFormulaCondition;
       return (
         <div className="flex flex-col gap-1.5">
-          <input
+          <Input
+            label="Formula"
+            hideLabel
+            uiSize="sm"
             type="text"
-            className={textClass}
+            widthClassName="w-full min-w-[10rem]"
             placeholder="e.g. close - open > 0"
             value={c.formula}
             onChange={(e) => onChange({ ...c, formula: e.target.value })}
@@ -514,21 +589,20 @@ function CombinatorToggle({ value, onChange }: { value: 'AND' | 'OR'; onChange: 
 
 function AddConditionMenu({ onAdd }: { onAdd: (type: Condition['type']) => void }) {
   return (
-    <select
-      className={`${selectClass} mt-3 w-full sm:w-auto`}
+    <Select
+      label="Add condition"
+      hideLabel
+      size="sm"
+      searchable={false}
+      allowCustomValue={false}
+      triggerClassName="mt-3 w-full sm:w-auto sm:min-w-[12rem]"
+      placeholder="+ Add condition…"
       value=""
-      onChange={(e) => {
-        if (e.target.value) onAdd(e.target.value as Condition['type']);
-        e.target.value = '';
+      onChange={(v) => {
+        if (v) onAdd(v as Condition['type']);
       }}
-    >
-      <option value="">+ Add condition…</option>
-      {Object.entries(CONDITION_TYPE_LABELS).map(([type, label]) => (
-        <option key={type} value={type}>
-          {label}
-        </option>
-      ))}
-    </select>
+      options={Object.entries(CONDITION_TYPE_LABELS).map(([type, label]) => ({ value: type, label }))}
+    />
   );
 }
 
@@ -548,17 +622,17 @@ function ConditionRow({
   return (
     <div className="rounded-lg border border-border bg-surface p-3">
       <div className="mb-2.5 flex items-center justify-between gap-2">
-        <select
-          className={selectClass}
+        <Select
+          label="Condition type"
+          hideLabel
+          size="sm"
+          searchable={false}
+          allowCustomValue={false}
+          triggerClassName="w-auto min-w-[10rem]"
           value={condition.type}
-          onChange={(e) => onChange(defaultConditionFor(e.target.value as Condition['type'], catalog))}
-        >
-          {Object.entries(CONDITION_TYPE_LABELS).map(([type, label]) => (
-            <option key={type} value={type}>
-              {label}
-            </option>
-          ))}
-        </select>
+          onChange={(v) => onChange(defaultConditionFor(v as Condition['type'], catalog))}
+          options={Object.entries(CONDITION_TYPE_LABELS).map(([type, label]) => ({ value: type, label }))}
+        />
         <button type="button" onClick={onRemove} className="text-xs font-medium text-text-tertiary hover:text-pnl-negative">
           Remove
         </button>
