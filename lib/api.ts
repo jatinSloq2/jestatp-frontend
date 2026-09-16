@@ -183,6 +183,63 @@ export interface FundRecord {
   syncedAt: string;
 }
 
+// ─── Backtesting ───────────────────────────────────────────
+
+export interface Candle {
+  timestamp: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export interface BacktestTrade {
+  entryIndex: number;
+  exitIndex: number;
+  entryTimestamp: number;
+  exitTimestamp: number;
+  entryPrice: number;
+  exitPrice: number;
+  quantity: number;
+  pnl: number;
+  pnlPercent: number;
+  exitReason: 'exit_condition' | 'stop_loss' | 'target' | 'trailing_stop_loss' | 'time_exit' | 'end_of_data';
+}
+
+export interface EquityPoint {
+  timestamp: number;
+  equity: number;
+}
+
+export interface BacktestStats {
+  totalTrades: number;
+  winningTrades: number;
+  losingTrades: number;
+  winRatePercent: number;
+  totalPnl: number;
+  totalReturnPercent: number;
+  maxDrawdownPercent: number;
+  profitFactor: number | null;
+  averagePnlPerTrade: number;
+  bestTrade: number;
+  worstTrade: number;
+}
+
+export interface BacktestResult {
+  strategyId: string;
+  broker: BrokerName;
+  timeframe: string;
+  instrument: string;
+  exchange: string;
+  from: string;
+  to: string;
+  candles: Candle[];
+  trades: BacktestTrade[];
+  equityCurve: EquityPoint[];
+  stats: BacktestStats;
+}
+
 /** The pagination meta these two endpoints return, plus the broker connection's lastSyncedAt. */
 export interface SyncedPaginationMeta {
   page: number;
@@ -314,6 +371,17 @@ export const api = {
 
   getStrategyVersion: (id: string, version: number) =>
     request<StrategyVersion>(`/strategies/${id}/versions/${version}`),
+
+  runBacktest: (id: string, input: { broker: BrokerName; from?: string; to?: string }) =>
+    request<BacktestResult>(`/strategies/${id}/backtest`, { method: 'POST', body: JSON.stringify(input) }),
+
+  previewBacktest: (
+    input: Pick<StrategyInput, 'instrument' | 'exchange' | 'segment' | 'timeframe' | 'entry' | 'exit' | 'risk'> & {
+      broker: BrokerName;
+      from?: string;
+      to?: string;
+    },
+  ) => request<BacktestResult>('/strategies/backtest/preview', { method: 'POST', body: JSON.stringify(input) }),
 
   // ─── Trading data (orders / positions / funds) ────────────
   listOrders: (params: { broker: BrokerName; segment?: OrderSegment; page?: number; limit?: number }) => {

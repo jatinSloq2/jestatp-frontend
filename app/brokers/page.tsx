@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { useUser } from '@/lib/useUser';
 import { api, ApiError, BrokerConnection, BrokerName, SupportedBroker } from '@/lib/api';
 
@@ -23,6 +24,7 @@ export default function BrokersPage() {
     const [error, setError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
     const [busyBroker, setBusyBroker] = useState<BrokerName | null>(null);
+    const [refreshing, setRefreshing] = useState(false);
 
     async function loadAll() {
         setError(null);
@@ -32,6 +34,15 @@ export default function BrokersPage() {
             setConnections(conns);
         } catch (err) {
             setError(err instanceof ApiError ? err.message : 'Could not load broker connections.');
+        }
+    }
+
+    async function handleRefresh() {
+        setRefreshing(true);
+        try {
+            await loadAll();
+        } finally {
+            setRefreshing(false);
         }
     }
 
@@ -85,11 +96,14 @@ export default function BrokersPage() {
     return (
         <DashboardShell user={user}>
             <div className="flex flex-col gap-6">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Brokers</h1>
-                    <p className="mt-1 text-base text-text-secondary">
-                        Connect a broker account to sync live orders, positions, and funds.
-                    </p>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Brokers</h1>
+                        <p className="mt-1 text-base text-text-secondary">
+                            Connect a broker account to sync live orders, positions, and funds.
+                        </p>
+                    </div>
+                    <RefreshButton onClick={handleRefresh} loading={refreshing} />
                 </div>
 
                 {notice ? <Banner tone="positive">{notice}</Banner> : null}

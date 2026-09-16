@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { Card } from '@/components/ui/card';
 import { Banner } from '@/components/ui/banner';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { useUser } from '@/lib/useUser';
 
 export default function DashboardPage() {
-  const { user, loading, error } = useUser();
+  const { user, loading, error, refresh } = useUser();
 
   if (loading) {
     return (
@@ -20,11 +21,14 @@ export default function DashboardPage() {
   return (
     <DashboardShell user={user}>
       <div className="flex flex-col gap-8">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
-            Welcome back{user?.fullName ? `, ${user.fullName.split(' ')[0]}` : ''}.
-          </h1>
-          <p className="mt-1 text-base text-text-secondary">Here's where things stand on your account.</p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
+              Welcome back{user?.fullName ? `, ${user.fullName.split(' ')[0]}` : ''}.
+            </h1>
+            <p className="mt-1 text-base text-text-secondary">Here's where things stand on your account.</p>
+          </div>
+          <RefreshButton onClick={refresh} loading={loading} />
         </div>
 
         {error ? <Banner tone="negative">{error}</Banner> : null}

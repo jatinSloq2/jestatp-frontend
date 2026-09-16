@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
 import { BrokerSelect, useConnectedBrokers } from '@/components/trading/broker-picker';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { useUser } from '@/lib/useUser';
 import { api, ApiError, FundRecord } from '@/lib/api';
 
@@ -81,6 +82,7 @@ export default function FundsPage() {
                 <span className="text-xs text-text-tertiary">
                   {funds?.syncedAt ? `Synced ${new Date(funds.syncedAt).toLocaleTimeString()}` : 'Never synced'}
                 </span>
+                <RefreshButton onClick={load} loading={loading} />
                 <Button type="button" variant="secondary" size="md" loading={syncing} onClick={handleSync}>
                   Sync now
                 </Button>

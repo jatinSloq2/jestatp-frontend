@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
 import { BrokerSelect, useConnectedBrokers } from '@/components/trading/broker-picker';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { useUser } from '@/lib/useUser';
 import { api, ApiError, OrderSegment, PositionRecord, SyncedPaginationMeta } from '@/lib/api';
 
@@ -122,6 +123,7 @@ export default function PositionsPage() {
                 <span className="text-xs text-text-tertiary">
                   {meta?.lastSyncedAt ? `Synced ${new Date(meta.lastSyncedAt).toLocaleTimeString()}` : 'Never synced'}
                 </span>
+                <RefreshButton onClick={load} loading={loading} />
                 <Button type="button" variant="secondary" size="md" loading={syncing} onClick={handleSync}>
                   Sync now
                 </Button>

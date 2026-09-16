@@ -3,34 +3,9 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
-
-  /* Dark theme (default) — deep navy/slate base */
-  --canvas: 8 11 16;
-  --surface: 14 19 27;
-  --surface-raised: 20 27 37;
-  --surface-sunken: 6 8 12;
-  --border: 32 41 55;
-  --border-strong: 47 59 77;
-
-  --text-primary: 236 240 245;
-  --text-secondary: 148 161 180;
-  --text-tertiary: 96 108 127;
-  --text-on-accent: 6 12 12;
-
-  --accent-trust: 45 166 150;
-  --accent-trust-strong: 74 199 181;
-  --accent-trust-soft: 22 41 39;
-
-  --pnl-positive: 79 179 122;
-  --pnl-negative: 214 105 108;
-  --risk-warning: 205 155 62;
-  --risk-critical: 199 82 79;
-}
-
-:root.light {
   color-scheme: light;
 
+  /* Light theme (default) — white canvas, teal accent */
   --canvas: 246 247 249;
   --surface: 255 255 255;
   --surface-raised: 255 255 255;
@@ -51,6 +26,32 @@
   --pnl-negative: 189 62 65;
   --risk-warning: 168 116 21;
   --risk-critical: 176 55 52;
+}
+
+:root.dark {
+  color-scheme: dark;
+
+  /* Dark theme (opt-in) — deep navy/slate base */
+  --canvas: 8 11 16;
+  --surface: 14 19 27;
+  --surface-raised: 20 27 37;
+  --surface-sunken: 6 8 12;
+  --border: 32 41 55;
+  --border-strong: 47 59 77;
+
+  --text-primary: 236 240 245;
+  --text-secondary: 148 161 180;
+  --text-tertiary: 96 108 127;
+  --text-on-accent: 6 12 12;
+
+  --accent-trust: 45 166 150;
+  --accent-trust-strong: 74 199 181;
+  --accent-trust-soft: 22 41 39;
+
+  --pnl-positive: 79 179 122;
+  --pnl-negative: 214 105 108;
+  --risk-warning: 205 155 62;
+  --risk-critical: 199 82 79;
 }
 
 * {

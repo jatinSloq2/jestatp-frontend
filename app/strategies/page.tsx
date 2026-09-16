@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
 import { StrategyStatusBadge } from '@/components/ui/status-badge';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { useUser } from '@/lib/useUser';
 import { api, ApiError, Strategy, StrategyStatus } from '@/lib/api';
 
@@ -18,14 +19,18 @@ export default function StrategiesPage() {
   const [statusFilter, setStatusFilter] = useState<StrategyStatus | 'all'>('all');
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   async function load() {
+    setLoading(true);
     setError(null);
     try {
       const { data } = await api.listStrategies(statusFilter === 'all' ? undefined : { status: statusFilter });
       setStrategies(data);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not load strategies.');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -60,24 +65,27 @@ export default function StrategiesPage() {
           </Link>
         </div>
 
-        {error ? <Banner tone="negative">{error}</Banner> : null}
-
-        <div className="flex gap-2">
-          {STATUS_FILTERS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setStatusFilter(s)}
-              className={`rounded-full border px-3 py-1.5 text-sm font-medium capitalize transition-colors ${
-                statusFilter === s
-                  ? 'border-accent-trust bg-accent-trust-soft text-accent-trust-strong'
-                  : 'border-border-strong text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              {s}
-            </button>
-          ))}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex gap-2">
+            {STATUS_FILTERS.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setStatusFilter(s)}
+                className={`rounded-full border px-3 py-1.5 text-sm font-medium capitalize transition-colors ${
+                  statusFilter === s
+                    ? 'border-accent-trust bg-accent-trust-soft text-accent-trust-strong'
+                    : 'border-border-strong text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+          <RefreshButton onClick={load} loading={loading} />
         </div>
+
+        {error ? <Banner tone="negative">{error}</Banner> : null}
 
         {userLoading || !strategies ? (
           <p className="text-text-secondary">Loading…</p>

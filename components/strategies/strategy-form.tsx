@@ -7,7 +7,7 @@ import { Banner } from '@/components/ui/banner';
 import { Select } from '@/components/ui/select';
 import { ConditionBlockEditor } from './condition-editor';
 import { RiskConfigForm } from './risk-config-form';
-import { StrategyChartPreview } from './strategy-chart-preview';
+import { StrategyBacktestPanel } from './strategy-backtest-panel';
 import { api, ApiError, IndicatorCatalog, Segment, StrategyInput, ValidationResult } from '@/lib/api';
 import { EXCHANGES_BY_SEGMENT, instrumentsForSegment } from '@/lib/instruments';
 
@@ -171,8 +171,16 @@ export function StrategyForm({
         </section>
 
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">Preview</h2>
-          <StrategyChartPreview entry={input.entry} exit={input.exit} instrument={input.instrument} />
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">Backtest preview</h2>
+          <StrategyBacktestPanel
+            instrument={input.instrument}
+            exchange={input.exchange}
+            segment={input.segment ?? 'equity'}
+            timeframe={input.timeframe}
+            entry={input.entry}
+            exit={input.exit}
+            risk={input.risk}
+          />
         </section>
 
         <section className="flex flex-col gap-3">

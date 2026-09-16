@@ -8,6 +8,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
 import { StrategyStatusBadge } from '@/components/ui/status-badge';
+import { RefreshButton } from '@/components/ui/refresh-button';
+import { StrategyBacktestSection } from '@/components/strategies/strategy-backtest-section';
 import { useUser } from '@/lib/useUser';
 import { api, ApiError, Strategy, StrategyVersion } from '@/lib/api';
 
@@ -28,8 +30,10 @@ export default function StrategyDetailPage() {
   const [expandedVersion, setExpandedVersion] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   async function load() {
+    setLoading(true);
     setError(null);
     try {
       const [s, v] = await Promise.all([api.getStrategy(params.id), api.listStrategyVersions(params.id)]);
@@ -37,6 +41,8 @@ export default function StrategyDetailPage() {
       setVersions(v);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not load this strategy.');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -69,15 +75,18 @@ export default function StrategyDetailPage() {
   return (
     <DashboardShell user={user}>
       <div className="flex flex-col gap-6">
-        <div>
-          <Link href="/strategies" className="text-sm font-medium text-accent-trust hover:text-accent-trust-strong">
-            ← Back to strategies
-          </Link>
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight text-text-primary">{strategy.name}</h1>
-            <StrategyStatusBadge status={strategy.status} />
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <Link href="/strategies" className="text-sm font-medium text-accent-trust hover:text-accent-trust-strong">
+              ← Back to strategies
+            </Link>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl font-semibold tracking-tight text-text-primary">{strategy.name}</h1>
+              <StrategyStatusBadge status={strategy.status} />
+            </div>
+            {strategy.description ? <p className="mt-1 text-base text-text-secondary">{strategy.description}</p> : null}
           </div>
-          {strategy.description ? <p className="mt-1 text-base text-text-secondary">{strategy.description}</p> : null}
+          <RefreshButton onClick={load} loading={loading} />
         </div>
 
         {error ? <Banner tone="negative">{error}</Banner> : null}
@@ -184,6 +193,10 @@ export default function StrategyDetailPage() {
 
         <Card title="Exit conditions">
           <JsonBlock value={strategy.exitConditions} />
+        </Card>
+
+        <Card title="Backtest">
+          <StrategyBacktestSection strategyId={strategy.id} />
         </Card>
 
         <Card title="Version history">

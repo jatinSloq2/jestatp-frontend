@@ -185,7 +185,7 @@ export function Select({
           <ul
             ref={listRef}
             role="listbox"
-            className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded border border-border-strong bg-surface-raised py-1 shadow-lg"
+            className="absolute z-20 mt-1 max-h-60 w-full min-w-full overflow-y-auto overflow-x-hidden rounded border border-border-strong bg-surface-raised py-1 shadow-lg"
           >
             {filtered.length === 0 ? (
               <li className="px-3.5 py-2 text-sm text-text-tertiary">
@@ -203,13 +203,15 @@ export function Select({
                   }}
                   onMouseEnter={() => setHighlighted(i)}
                   className={clsx(
-                    'flex cursor-pointer items-center justify-between gap-2 px-3.5 py-2 text-sm',
+                    'flex cursor-pointer flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 px-3.5 py-2 text-sm',
                     i === highlighted ? 'bg-accent-trust/10 text-text-primary' : 'text-text-secondary',
                     option.value === value && 'font-medium text-accent-trust',
                   )}
                 >
-                  <span>{option.label}</span>
-                  {option.sublabel ? <span className="text-xs text-text-tertiary">{option.sublabel}</span> : null}
+                  <span className="min-w-0 flex-1 whitespace-normal break-words">{option.label}</span>
+                  {option.sublabel ? (
+                    <span className="shrink-0 whitespace-normal break-words text-xs text-text-tertiary">{option.sublabel}</span>
+                  ) : null}
                 </li>
               ))
             )}
