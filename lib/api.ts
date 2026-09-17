@@ -173,6 +173,18 @@ export interface PositionRecord {
   unrealizedPnl: number;
 }
 
+export interface HoldingRecord {
+  id: string;
+  broker: BrokerName;
+  exchange: string;
+  tradingSymbol: string;
+  isin: string | null;
+  quantity: number;
+  averagePrice: number;
+  /** Last known price from the periodic broker sync — the holdings page overlays this with a live tick from /ws/market-data. */
+  lastTradedPrice: number | null;
+}
+
 export interface FundRecord {
   id: string;
   broker: BrokerName;
@@ -398,6 +410,13 @@ export const api = {
     if (params.page) qs.set('page', String(params.page));
     if (params.limit) qs.set('limit', String(params.limit));
     return requestWithMeta<PositionRecord[], SyncedPaginationMeta>(`/positions?${qs.toString()}`);
+  },
+
+  listHoldings: (params: { broker: BrokerName; page?: number; limit?: number }) => {
+    const qs = new URLSearchParams({ broker: params.broker });
+    if (params.page) qs.set('page', String(params.page));
+    if (params.limit) qs.set('limit', String(params.limit));
+    return requestWithMeta<HoldingRecord[], SyncedPaginationMeta>(`/holdings?${qs.toString()}`);
   },
 
   getFunds: (broker: BrokerName) => request<FundRecord>(`/funds?broker=${broker}`),
