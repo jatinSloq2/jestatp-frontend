@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { Card } from '@/components/ui/card';
@@ -9,34 +9,46 @@ import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
 import { OtpInput } from '@/components/ui/otp-input';
 import { useUser } from '@/lib/useUser';
-import { api, ApiError, Session } from '@/lib/api';
+import { ApiError } from '@/lib/api';
+import {
+  useSessions,
+  useTotpSetup,
+  useEmailTwoFaSetup,
+  useTotpEnable,
+  useEmailTwoFaEnable,
+  useDisable2fa,
+  useLogoutAll,
+} from '@/lib/queries/useSettings';
 
 type SetupFlow = 'none' | 'totp' | 'email';
 
 export default function SecuritySettingsPage() {
   const router = useRouter();
-  const { user, loading, refresh } = useUser();
+  const { user, loading } = useUser();
 
   const [flow, setFlow] = useState<SetupFlow>('none');
   const [totpData, setTotpData] = useState<{ secret: string; qrCodeDataUrl: string } | null>(null);
   const [code, setCode] = useState('');
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
   const [disablePassword, setDisablePassword] = useState('');
-  const [disabling, setDisabling] = useState(false);
 
-  const [sessions, setSessions] = useState<Session[] | null>(null);
-  const [sessionsError, setSessionsError] = useState<string | null>(null);
-  const [loggingOutAll, setLoggingOutAll] = useState(false);
+  const sessionsQuery = useSessions();
+  const [sessionsActionError, setSessionsActionError] = useState<string | null>(null);
 
-  useEffect(() => {
-    api
-      .sessions()
-      .then(setSessions)
-      .catch((err) => setSessionsError(err instanceof ApiError ? err.message : 'Could not load sessions.'));
-  }, []);
+  const totpSetupMutation = useTotpSetup();
+  const emailTwoFaSetupMutation = useEmailTwoFaSetup();
+  const totpEnableMutation = useTotpEnable();
+  const emailTwoFaEnableMutation = useEmailTwoFaEnable();
+  const disable2faMutation = useDisable2fa();
+  const logoutAllMutation = useLogoutAll();
+
+  const busy =
+    totpSetupMutation.isPending ||
+    emailTwoFaSetupMutation.isPending ||
+    totpEnableMutation.isPending ||
+    emailTwoFaEnableMutation.isPending;
 
   function resetFlow() {
     setFlow('none');
@@ -48,87 +60,72 @@ export default function SecuritySettingsPage() {
 
   async function startTotpSetup() {
     setError(null);
-    setBusy(true);
     try {
-      const data = await api.totpSetup();
+      const data = await totpSetupMutation.mutateAsync();
       setTotpData(data);
       setFlow('totp');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not start 2FA setup.');
-    } finally {
-      setBusy(false);
     }
   }
 
   async function startEmailSetup() {
     setError(null);
-    setBusy(true);
     try {
-      const result = await api.emailTwoFaSetup();
+      const result = await emailTwoFaSetupMutation.mutateAsync();
       setInfo(result.message);
       setFlow('email');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not send a confirmation code.');
-    } finally {
-      setBusy(false);
     }
   }
 
   async function confirmTotp(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setBusy(true);
     try {
-      await api.totpEnable({ code });
-      await refresh();
+      await totpEnableMutation.mutateAsync({ code });
       resetFlow();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Invalid code. Try again.');
-    } finally {
-      setBusy(false);
     }
   }
 
   async function confirmEmail(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setBusy(true);
     try {
-      await api.emailTwoFaEnable({ code });
-      await refresh();
+      await emailTwoFaEnableMutation.mutateAsync({ code });
       resetFlow();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Invalid or expired code. Try again.');
-    } finally {
-      setBusy(false);
     }
   }
 
   async function handleDisable(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setDisabling(true);
     try {
-      await api.disable2fa({ password: disablePassword || undefined });
+      await disable2faMutation.mutateAsync({ password: disablePassword || undefined });
       setDisablePassword('');
-      await refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not disable 2FA.');
-    } finally {
-      setDisabling(false);
     }
   }
 
   async function handleLogoutAll() {
-    setLoggingOutAll(true);
+    setSessionsActionError(null);
     try {
-      await api.logoutAll();
+      await logoutAllMutation.mutateAsync();
       router.push('/login');
     } catch (err) {
-      setSessionsError(err instanceof ApiError ? err.message : 'Could not log out other sessions.');
-      setLoggingOutAll(false);
+      setSessionsActionError(err instanceof ApiError ? err.message : 'Could not log out other sessions.');
     }
   }
+
+  const sessions = sessionsQuery.data ?? null;
+  const sessionsError =
+    sessionsActionError ?? (sessionsQuery.error instanceof ApiError ? sessionsQuery.error.message : null);
 
   if (loading) {
     return (
@@ -166,7 +163,7 @@ export default function SecuritySettingsPage() {
                   />
                 ) : null}
                 <div>
-                  <Button type="submit" variant="destructive" loading={disabling}>
+                  <Button type="submit" variant="destructive" loading={disable2faMutation.isPending}>
                     Disable 2FA
                   </Button>
                 </div>
@@ -264,7 +261,7 @@ export default function SecuritySettingsPage() {
               variant="destructive"
               className="mt-3"
               onClick={handleLogoutAll}
-              loading={loggingOutAll}
+              loading={logoutAllMutation.isPending}
             >
               Log out of all devices
             </Button>

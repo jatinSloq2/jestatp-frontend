@@ -7,14 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
 import { useUser } from '@/lib/useUser';
-import { api, ApiError } from '@/lib/api';
+import { ApiError } from '@/lib/api';
+import { useUpdateProfile } from '@/lib/queries/useSettings';
 
 export default function ProfileSettingsPage() {
-  const { user, loading, refresh } = useUser();
+  const { user, loading } = useUser();
   const [fullName, setFullName] = useState('');
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const updateProfileMutation = useUpdateProfile();
 
   useEffect(() => {
     if (user) setFullName(user.fullName);
@@ -24,15 +25,11 @@ export default function ProfileSettingsPage() {
     e.preventDefault();
     setError(null);
     setSaved(false);
-    setSaving(true);
     try {
-      await api.updateProfile({ fullName });
-      await refresh();
+      await updateProfileMutation.mutateAsync({ fullName });
       setSaved(true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not update your profile. Try again.');
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -72,7 +69,7 @@ export default function ProfileSettingsPage() {
             <Input label="Email" value={user?.email ?? ''} disabled hint="Your email can't be changed here." />
 
             <div>
-              <Button type="submit" loading={saving} disabled={fullName === user?.fullName}>
+              <Button type="submit" loading={updateProfileMutation.isPending} disabled={fullName === user?.fullName}>
                 Save changes
               </Button>
             </div>

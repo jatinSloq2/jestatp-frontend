@@ -8,8 +8,9 @@ import { Select } from '@/components/ui/select';
 import { ConditionBlockEditor } from './condition-editor';
 import { RiskConfigForm } from './risk-config-form';
 import { StrategyBacktestPanel } from './strategy-backtest-panel';
-import { api, ApiError, IndicatorCatalog, Segment, StrategyInput, ValidationResult } from '@/lib/api';
+import { ApiError, IndicatorCatalog, Segment, StrategyInput, ValidationResult } from '@/lib/api';
 import { EXCHANGES_BY_SEGMENT, instrumentsForSegment } from '@/lib/instruments';
+import { useValidateStrategy } from '@/lib/queries/useStrategies';
 
 const SEGMENT_OPTIONS: { value: Segment; label: string }[] = [
   { value: 'equity', label: 'Equity — cash market' },
@@ -35,9 +36,9 @@ export function StrategyForm({
 }) {
   const [input, setInput] = useState<StrategyInput>(initial);
   const [validation, setValidation] = useState<ValidationResult | null>(null);
-  const [validating, setValidating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const validateMutation = useValidateStrategy();
 
   function set<K extends keyof StrategyInput>(key: K, value: StrategyInput[K]) {
     setInput((prev) => ({ ...prev, [key]: value }));
@@ -45,14 +46,11 @@ export function StrategyForm({
 
   async function handleValidate() {
     setError(null);
-    setValidating(true);
     try {
-      const result = await api.validateStrategy(input);
+      const result = await validateMutation.mutateAsync(input);
       setValidation(result);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not validate. Try again.');
-    } finally {
-      setValidating(false);
     }
   }
 
@@ -61,7 +59,7 @@ export function StrategyForm({
     setError(null);
     setSaving(true);
     try {
-      const result = await api.validateStrategy(input);
+      const result = await validateMutation.mutateAsync(input);
       setValidation(result);
       if (!result.valid) {
         setError('Fix the validation issues below before saving.');
@@ -212,7 +210,7 @@ export function StrategyForm({
 
       {!disabled ? (
         <div className="flex gap-3">
-          <Button type="button" variant="secondary" onClick={handleValidate} loading={validating}>
+          <Button type="button" variant="secondary" onClick={handleValidate} loading={validateMutation.isPending}>
             Validate
           </Button>
           <Button type="submit" loading={saving}>

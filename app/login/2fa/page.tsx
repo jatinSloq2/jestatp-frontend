@@ -6,7 +6,8 @@ import { AuthShell } from '@/components/auth/auth-shell';
 import { OtpInput } from '@/components/ui/otp-input';
 import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
-import { api, ApiError } from '@/lib/api';
+import { ApiError } from '@/lib/api';
+import { useVerifyLogin2fa, useResendLogin2fa } from '@/lib/queries/useAuth';
 
 function TwoFaChallengeForm() {
   const router = useRouter();
@@ -14,34 +15,28 @@ function TwoFaChallengeForm() {
   const method = params.get('method') === 'totp' ? 'totp' : 'email';
 
   const [code, setCode] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resent, setResent] = useState(false);
+  const verifyMutation = useVerifyLogin2fa();
+  const resendMutation = useResendLogin2fa();
 
   async function handleSubmit() {
     setError(null);
-    setLoading(true);
     try {
-      await api.verifyLogin2fa({ code });
+      await verifyMutation.mutateAsync({ code });
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'That code didn’t work.');
-    } finally {
-      setLoading(false);
     }
   }
 
   async function handleResend() {
-    setResending(true);
     setError(null);
     try {
-      await api.resendLogin2fa();
+      await resendMutation.mutateAsync();
       setResent(true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Couldn’t resend the code.');
-    } finally {
-      setResending(false);
     }
   }
 
@@ -63,7 +58,7 @@ function TwoFaChallengeForm() {
         <Button
           type="button"
           size="lg"
-          loading={loading}
+          loading={verifyMutation.isPending}
           disabled={code.length !== 6}
           className="w-full"
           onClick={handleSubmit}
@@ -77,7 +72,7 @@ function TwoFaChallengeForm() {
             <button
               type="button"
               onClick={handleResend}
-              disabled={resending}
+              disabled={resendMutation.isPending}
               className="font-medium text-accent-trust hover:text-accent-trust-strong disabled:opacity-50"
             >
               Resend code

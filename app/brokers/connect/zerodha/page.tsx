@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
 import { useUser } from '@/lib/useUser';
-import { api, ApiError } from '@/lib/api';
+import { ApiError } from '@/lib/api';
+import { useZerodhaLoginUrl } from '@/lib/queries/useBrokers';
 
 // Key used to stash credentials across the redirect to Zerodha's domain and
 // back — sessionStorage survives a full page navigation, unlike React state.
@@ -18,9 +19,9 @@ export default function ConnectZerodhaPage() {
     const { user } = useUser();
     const [apiKey, setApiKey] = useState('');
     const [apiSecret, setApiSecret] = useState('');
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [redirectUrl, setRedirectUrl] = useState('…/brokers/zerodha/callback');
+    const loginUrlMutation = useZerodhaLoginUrl();
 
     useEffect(() => {
         setRedirectUrl(`${window.location.origin}/brokers/zerodha/callback`);
@@ -29,14 +30,12 @@ export default function ConnectZerodhaPage() {
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
         setError(null);
-        setLoading(true);
         try {
-            const { loginUrl } = await api.zerodhaLoginUrl({ apiKey });
+            const { loginUrl } = await loginUrlMutation.mutateAsync({ apiKey });
             sessionStorage.setItem(STASH_KEY, JSON.stringify({ apiKey, apiSecret }));
             window.location.href = loginUrl;
         } catch (err) {
             setError(err instanceof ApiError ? err.message : 'Could not start Zerodha login. Try again.');
-            setLoading(false);
         }
     }
 
@@ -78,7 +77,7 @@ export default function ConnectZerodhaPage() {
                             hint="Needed to complete the connection once you return from Zerodha's login."
                         />
 
-                        <Button type="submit" size="lg" loading={loading} className="w-full">
+                        <Button type="submit" size="lg" loading={loginUrlMutation.isPending} className="w-full">
                             Continue to Zerodha login
                         </Button>
                     </form>

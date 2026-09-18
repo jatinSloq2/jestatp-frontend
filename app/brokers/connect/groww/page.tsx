@@ -9,27 +9,25 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
 import { useUser } from '@/lib/useUser';
-import { api, ApiError } from '@/lib/api';
+import { ApiError } from '@/lib/api';
+import { useConnectGroww } from '@/lib/queries/useBrokers';
 
 export default function ConnectGrowwPage() {
     const router = useRouter();
     const { user } = useUser();
     const [apiKey, setApiKey] = useState('');
     const [apiSecret, setApiSecret] = useState('');
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const connectMutation = useConnectGroww();
 
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
         setError(null);
-        setLoading(true);
         try {
-            await api.connectGroww({ apiKey, apiSecret });
+            await connectMutation.mutateAsync({ apiKey, apiSecret });
             router.push('/brokers?connected=Groww');
         } catch (err) {
             setError(err instanceof ApiError ? err.message : 'Could not connect Groww. Check your details and try again.');
-        } finally {
-            setLoading(false);
         }
     }
 
@@ -61,7 +59,7 @@ export default function ConnectGrowwPage() {
                             type="password"
                         />
 
-                        <Button type="submit" size="lg" loading={loading} className="w-full">
+                        <Button type="submit" size="lg" loading={connectMutation.isPending} className="w-full">
                             Connect Groww
                         </Button>
                     </form>

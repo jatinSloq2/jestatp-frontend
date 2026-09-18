@@ -74,3 +74,27 @@ export function useLogin() {
 export function useRegister() {
   return useMutation({ mutationFn: api.register });
 }
+
+export function useVerifyEmail() {
+  return useMutation({ mutationFn: api.verifyEmail });
+}
+
+export function useResendVerification() {
+  return useMutation({ mutationFn: api.resendVerification });
+}
+
+export function useVerifyLogin2fa() {
+  return useMutation({ mutationFn: api.verifyLogin2fa });
+}
+
+export function useResendLogin2fa() {
+  return useMutation({ mutationFn: api.resendLogin2fa });
+}
+
+export function useForgotPassword() {
+  return useMutation({ mutationFn: api.forgotPassword });
+}
+
+export function useResetPassword() {
+  return useMutation({ mutationFn: api.resetPassword });
+}

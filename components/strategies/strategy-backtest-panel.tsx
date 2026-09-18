@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { api, ApiError, BacktestResult, ConditionBlock, RiskConfig, Segment, Timeframe } from '@/lib/api';
+import { ApiError, BacktestResult, ConditionBlock, RiskConfig, Segment, Timeframe } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { BrokerSelect, useConnectedBrokers } from '@/components/trading/broker-picker';
+import { usePreviewBacktest } from '@/lib/queries/useStrategies';
 import { BacktestChart } from './backtest-chart';
 import { BacktestStatsGrid } from './backtest-stats';
 
@@ -30,21 +31,18 @@ export function StrategyBacktestPanel({
   const { connections, connectedBrokers, broker, setBroker, loading: brokersLoading } = useConnectedBrokers();
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [hasRun, setHasRun] = useState(false);
+  const previewBacktestMutation = usePreviewBacktest();
 
   async function runBacktest() {
     if (!broker) return;
-    setLoading(true);
     setError(null);
     try {
-      const data = await api.previewBacktest({ instrument, exchange, segment, timeframe, entry, exit, risk, broker });
+      const data = await previewBacktestMutation.mutateAsync({ instrument, exchange, segment, timeframe, entry, exit, risk, broker });
       setResult(data);
       setHasRun(true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not run the backtest.');
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -64,16 +62,16 @@ export function StrategyBacktestPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           {connections ? <BrokerSelect connections={connectedBrokers} value={broker} onChange={setBroker} /> : null}
-          <Button type="button" size="md" loading={loading} disabled={!broker} onClick={runBacktest}>
+          <Button type="button" size="md" loading={previewBacktestMutation.isPending} disabled={!broker} onClick={runBacktest}>
             {hasRun ? 'Re-run backtest' : 'Run backtest'}
           </Button>
         </div>
-        {hasRun ? <RefreshButton onClick={runBacktest} loading={loading} label="Refresh" /> : null}
+        {hasRun ? <RefreshButton onClick={runBacktest} loading={previewBacktestMutation.isPending} label="Refresh" /> : null}
       </div>
 
       {error ? <Banner tone="negative">{error}</Banner> : null}
 
-      {!hasRun && !loading ? (
+      {!hasRun && !previewBacktestMutation.isPending ? (
         <p className="text-sm text-text-tertiary">
           Runs the entry/exit conditions above against real historical candles for {instrument || 'this instrument'} on{' '}
           {exchange || 'the selected exchange'} ({timeframe}), fetched live from your connected broker — not sample data.

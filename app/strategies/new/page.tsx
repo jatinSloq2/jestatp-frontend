@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { Banner } from '@/components/ui/banner';
 import { StrategyForm } from '@/components/strategies/strategy-form';
 import { useUser } from '@/lib/useUser';
-import { api, ApiError, IndicatorCatalog, StrategyInput } from '@/lib/api';
+import { ApiError, StrategyInput } from '@/lib/api';
+import { useIndicatorCatalog, useCreateStrategy } from '@/lib/queries/useStrategies';
 
 const DEFAULT_INPUT: StrategyInput = {
   name: '',
@@ -33,18 +33,14 @@ const DEFAULT_INPUT: StrategyInput = {
 export default function NewStrategyPage() {
   const router = useRouter();
   const { user } = useUser();
-  const [catalog, setCatalog] = useState<IndicatorCatalog | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const catalogQuery = useIndicatorCatalog();
+  const createMutation = useCreateStrategy();
 
-  useEffect(() => {
-    api
-      .getIndicatorCatalog()
-      .then(setCatalog)
-      .catch((err) => setError(err instanceof ApiError ? err.message : 'Could not load the strategy catalog.'));
-  }, []);
+  const catalog = catalogQuery.data ?? null;
+  const error = catalogQuery.error instanceof ApiError ? catalogQuery.error.message : null;
 
   async function handleSubmit(input: StrategyInput) {
-    const strategy = await api.createStrategy(input);
+    const strategy = await createMutation.mutateAsync(input);
     router.push(`/strategies/${strategy.id}`);
   }
 

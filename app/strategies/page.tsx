@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { Card } from '@/components/ui/card';
@@ -9,44 +9,40 @@ import { Banner } from '@/components/ui/banner';
 import { StrategyStatusBadge } from '@/components/ui/status-badge';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useUser } from '@/lib/useUser';
-import { api, ApiError, Strategy, StrategyStatus } from '@/lib/api';
+import { ApiError, StrategyStatus } from '@/lib/api';
+import {
+  useStrategies,
+  useActivateStrategy,
+  usePauseStrategy,
+  useDuplicateStrategy,
+  useArchiveStrategy,
+} from '@/lib/queries/useStrategies';
 
 const STATUS_FILTERS: (StrategyStatus | 'all')[] = ['all', 'draft', 'active', 'paused', 'archived'];
 
 export default function StrategiesPage() {
   const { user, loading: userLoading } = useUser();
-  const [strategies, setStrategies] = useState<Strategy[] | null>(null);
   const [statusFilter, setStatusFilter] = useState<StrategyStatus | 'all'>('all');
-  const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  async function load() {
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await api.listStrategies(statusFilter === 'all' ? undefined : { status: statusFilter });
-      setStrategies(data);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not load strategies.');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { data, isLoading, isFetching, error, refetch } = useStrategies(
+    statusFilter === 'all' ? undefined : { status: statusFilter },
+  );
+  const strategies = data?.data ?? null;
 
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
+  const activateMutation = useActivateStrategy();
+  const pauseMutation = usePauseStrategy();
+  const duplicateMutation = useDuplicateStrategy();
+  const archiveMutation = useArchiveStrategy();
 
   async function withBusy(id: string, action: () => Promise<unknown>) {
     setBusyId(id);
-    setError(null);
+    setActionError(null);
     try {
       await action();
-      await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Action failed. Try again.');
+      setActionError(err instanceof ApiError ? err.message : 'Action failed. Try again.');
     } finally {
       setBusyId(null);
     }
@@ -82,12 +78,13 @@ export default function StrategiesPage() {
               </button>
             ))}
           </div>
-          <RefreshButton onClick={load} loading={loading} />
+          <RefreshButton onClick={() => refetch()} loading={isFetching} />
         </div>
 
-        {error ? <Banner tone="negative">{error}</Banner> : null}
+        {error ? <Banner tone="negative">{error.message}</Banner> : null}
+        {actionError ? <Banner tone="negative">{actionError}</Banner> : null}
 
-        {userLoading || !strategies ? (
+        {userLoading || isLoading || !strategies ? (
           <p className="text-text-secondary">Loading…</p>
         ) : strategies.length === 0 ? (
           <Card>
@@ -117,7 +114,12 @@ export default function StrategiesPage() {
                   </div>
                   <div className="flex shrink-0 flex-wrap gap-2">
                     {s.status === 'draft' || s.status === 'paused' ? (
-                      <Button type="button" size="md" loading={busy} onClick={() => withBusy(s.id, () => api.activateStrategy(s.id))}>
+                      <Button
+                        type="button"
+                        size="md"
+                        loading={busy}
+                        onClick={() => withBusy(s.id, () => activateMutation.mutateAsync(s.id))}
+                      >
                         Activate
                       </Button>
                     ) : null}
@@ -127,7 +129,7 @@ export default function StrategiesPage() {
                         variant="secondary"
                         size="md"
                         loading={busy}
-                        onClick={() => withBusy(s.id, () => api.pauseStrategy(s.id))}
+                        onClick={() => withBusy(s.id, () => pauseMutation.mutateAsync(s.id))}
                       >
                         Pause
                       </Button>
@@ -137,7 +139,7 @@ export default function StrategiesPage() {
                       variant="secondary"
                       size="md"
                       loading={busy}
-                      onClick={() => withBusy(s.id, () => api.duplicateStrategy(s.id))}
+                      onClick={() => withBusy(s.id, () => duplicateMutation.mutateAsync(s.id))}
                     >
                       Duplicate
                     </Button>
@@ -149,7 +151,7 @@ export default function StrategiesPage() {
                         loading={busy}
                         onClick={() => {
                           if (confirm(`Archive "${s.name}"? This can't be undone from here.`)) {
-                            withBusy(s.id, () => api.archiveStrategy(s.id));
+                            withBusy(s.id, () => archiveMutation.mutateAsync(s.id));
                           }
                         }}
                       >

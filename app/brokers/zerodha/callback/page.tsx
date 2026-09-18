@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
-import { api, ApiError } from '@/lib/api';
+import { ApiError } from '@/lib/api';
+import { useConnectZerodha } from '@/lib/queries/useBrokers';
 
 const STASH_KEY = 'zerodha_connect_pending';
 
@@ -16,6 +17,7 @@ function ZerodhaCallbackContent() {
     const searchParams = useSearchParams();
     const [state, setState] = useState<State>('connecting');
     const [error, setError] = useState<string | null>(null);
+    const connectMutation = useConnectZerodha();
 
     useEffect(() => {
         async function complete() {
@@ -47,7 +49,7 @@ function ZerodhaCallbackContent() {
             sessionStorage.removeItem(STASH_KEY);
 
             try {
-                await api.connectZerodha({ apiKey, apiSecret, requestToken });
+                await connectMutation.mutateAsync({ apiKey, apiSecret, requestToken });
                 router.push('/brokers?connected=Zerodha');
             } catch (err) {
                 setError(err instanceof ApiError ? err.message : 'Could not complete the Zerodha connection.');

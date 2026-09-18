@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
@@ -11,7 +11,15 @@ import { StrategyStatusBadge } from '@/components/ui/status-badge';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { StrategyBacktestSection } from '@/components/strategies/strategy-backtest-section';
 import { useUser } from '@/lib/useUser';
-import { api, ApiError, Strategy, StrategyVersion } from '@/lib/api';
+import { ApiError } from '@/lib/api';
+import {
+  useStrategy,
+  useStrategyVersions,
+  useActivateStrategy,
+  usePauseStrategy,
+  useDuplicateStrategy,
+  useArchiveStrategy,
+} from '@/lib/queries/useStrategies';
 
 function JsonBlock({ value }: { value: unknown }) {
   return (
@@ -25,43 +33,44 @@ export default function StrategyDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useUser();
-  const [strategy, setStrategy] = useState<Strategy | null>(null);
-  const [versions, setVersions] = useState<StrategyVersion[] | null>(null);
   const [expandedVersion, setExpandedVersion] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  async function load() {
-    setLoading(true);
-    setError(null);
-    try {
-      const [s, v] = await Promise.all([api.getStrategy(params.id), api.listStrategyVersions(params.id)]);
-      setStrategy(s);
-      setVersions(v);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not load this strategy.');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const strategyQuery = useStrategy(params.id);
+  const versionsQuery = useStrategyVersions(params.id);
+  const strategy = strategyQuery.data ?? null;
+  const versions = versionsQuery.data ?? null;
 
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id]);
+  const activateMutation = useActivateStrategy();
+  const pauseMutation = usePauseStrategy();
+  const duplicateMutation = useDuplicateStrategy();
+  const archiveMutation = useArchiveStrategy();
+
+  const loadError =
+    strategyQuery.error instanceof ApiError
+      ? strategyQuery.error.message
+      : versionsQuery.error instanceof ApiError
+        ? versionsQuery.error.message
+        : null;
+  const error = loadError ?? actionError;
+  const loading = strategyQuery.isFetching || versionsQuery.isFetching;
 
   async function runAction(action: () => Promise<unknown>) {
     setBusy(true);
-    setError(null);
+    setActionError(null);
     try {
       await action();
-      await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Action failed.');
+      setActionError(err instanceof ApiError ? err.message : 'Action failed.');
     } finally {
       setBusy(false);
     }
+  }
+
+  function refresh() {
+    strategyQuery.refetch();
+    versionsQuery.refetch();
   }
 
   if (!strategy) {
@@ -86,19 +95,19 @@ export default function StrategyDetailPage() {
             </div>
             {strategy.description ? <p className="mt-1 text-base text-text-secondary">{strategy.description}</p> : null}
           </div>
-          <RefreshButton onClick={load} loading={loading} />
+          <RefreshButton onClick={refresh} loading={loading} />
         </div>
 
         {error ? <Banner tone="negative">{error}</Banner> : null}
 
         <div className="flex flex-wrap gap-2">
           {strategy.status === 'draft' || strategy.status === 'paused' ? (
-            <Button type="button" loading={busy} onClick={() => runAction(() => api.activateStrategy(strategy.id))}>
+            <Button type="button" loading={busy} onClick={() => runAction(() => activateMutation.mutateAsync(strategy.id))}>
               Activate
             </Button>
           ) : null}
           {strategy.status === 'active' ? (
-            <Button type="button" variant="secondary" loading={busy} onClick={() => runAction(() => api.pauseStrategy(strategy.id))}>
+            <Button type="button" variant="secondary" loading={busy} onClick={() => runAction(() => pauseMutation.mutateAsync(strategy.id))}>
               Pause
             </Button>
           ) : null}
@@ -115,7 +124,7 @@ export default function StrategyDetailPage() {
             loading={busy}
             onClick={() =>
               runAction(async () => {
-                const dup = await api.duplicateStrategy(strategy.id);
+                const dup = await duplicateMutation.mutateAsync(strategy.id);
                 router.push(`/strategies/${dup.id}`);
               })
             }
@@ -129,7 +138,7 @@ export default function StrategyDetailPage() {
               loading={busy}
               onClick={() => {
                 if (confirm(`Archive "${strategy.name}"?`)) {
-                  runAction(() => api.archiveStrategy(strategy.id));
+                  runAction(() => archiveMutation.mutateAsync(strategy.id));
                 }
               }}
             >

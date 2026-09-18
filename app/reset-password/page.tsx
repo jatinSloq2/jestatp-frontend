@@ -7,7 +7,8 @@ import { AuthShell } from '@/components/auth/auth-shell';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
-import { api, ApiError } from '@/lib/api';
+import { ApiError } from '@/lib/api';
+import { useResetPassword } from '@/lib/queries/useAuth';
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -16,9 +17,9 @@ function ResetPasswordForm() {
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const resetPasswordMutation = useResetPassword();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -33,15 +34,12 @@ function ResetPasswordForm() {
       return;
     }
 
-    setLoading(true);
     try {
-      await api.resetPassword({ token, password });
+      await resetPasswordMutation.mutateAsync({ token, password });
       setDone(true);
       setTimeout(() => router.push('/login'), 2000);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Couldn’t reset your password. Try again.');
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -96,7 +94,7 @@ function ResetPasswordForm() {
           onChange={(e) => setConfirmPassword(e.target.value)}
         />
 
-        <Button type="submit" size="lg" loading={loading} className="mt-1 w-full">
+        <Button type="submit" size="lg" loading={resetPasswordMutation.isPending} className="mt-1 w-full">
           Reset password
         </Button>
 

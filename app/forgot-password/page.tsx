@@ -6,25 +6,23 @@ import { AuthShell } from '@/components/auth/auth-shell';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
-import { api, ApiError } from '@/lib/api';
+import { ApiError } from '@/lib/api';
+import { useForgotPassword } from '@/lib/queries/useAuth';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const forgotPasswordMutation = useForgotPassword();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setLoading(true);
     try {
-      await api.forgotPassword({ email });
+      await forgotPasswordMutation.mutateAsync({ email });
       setSent(true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Couldn’t send a reset link. Try again.');
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -57,7 +55,7 @@ export default function ForgotPasswordPage() {
           onChange={(e) => setEmail(e.target.value)}
         />
 
-        <Button type="submit" size="lg" loading={loading} className="w-full">
+        <Button type="submit" size="lg" loading={forgotPasswordMutation.isPending} className="w-full">
           Send reset link
         </Button>
 

@@ -7,15 +7,16 @@ import { AuthShell } from '@/components/auth/auth-shell';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
-import { api, ApiError } from '@/lib/api';
+import { ApiError } from '@/lib/api';
+import { useRegister } from '@/lib/queries/useAuth';
 
 export default function SignupPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const registerMutation = useRegister();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -26,14 +27,11 @@ export default function SignupPage() {
       return;
     }
 
-    setLoading(true);
     try {
-      await api.register({ fullName, email, password });
+      await registerMutation.mutateAsync({ fullName, email, password });
       router.push(`/verify-email?email=${encodeURIComponent(email)}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Couldn’t create your account. Try again.');
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -69,7 +67,7 @@ export default function SignupPage() {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <Button type="submit" size="lg" loading={loading} className="mt-1 w-full">
+        <Button type="submit" size="lg" loading={registerMutation.isPending} className="mt-1 w-full">
           Create account
         </Button>
 

@@ -1,33 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { Banner } from '@/components/ui/banner';
 import { StrategyForm } from '@/components/strategies/strategy-form';
 import { useUser } from '@/lib/useUser';
-import { api, ApiError, IndicatorCatalog, Strategy, StrategyInput } from '@/lib/api';
+import { ApiError, StrategyInput } from '@/lib/api';
+import { useStrategy, useIndicatorCatalog, useUpdateStrategy } from '@/lib/queries/useStrategies';
 
 export default function EditStrategyPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useUser();
-  const [strategy, setStrategy] = useState<Strategy | null>(null);
-  const [catalog, setCatalog] = useState<IndicatorCatalog | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    Promise.all([api.getStrategy(params.id), api.getIndicatorCatalog()])
-      .then(([s, c]) => {
-        setStrategy(s);
-        setCatalog(c);
-      })
-      .catch((err) => setError(err instanceof ApiError ? err.message : 'Could not load this strategy.'));
-  }, [params.id]);
+  const strategyQuery = useStrategy(params.id);
+  const catalogQuery = useIndicatorCatalog();
+  const updateMutation = useUpdateStrategy(params.id);
+
+  const strategy = strategyQuery.data ?? null;
+  const catalog = catalogQuery.data ?? null;
+  const error =
+    strategyQuery.error instanceof ApiError
+      ? strategyQuery.error.message
+      : catalogQuery.error instanceof ApiError
+        ? catalogQuery.error.message
+        : null;
 
   async function handleSubmit(input: StrategyInput) {
-    await api.updateStrategy(params.id, { ...input, changeNote: input.changeNote || 'Edited via Strategy Builder' });
+    await updateMutation.mutateAsync({ ...input, changeNote: input.changeNote || 'Edited via Strategy Builder' });
     router.push(`/strategies/${params.id}`);
   }
 

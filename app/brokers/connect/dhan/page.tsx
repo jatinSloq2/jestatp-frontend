@@ -9,27 +9,25 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
 import { useUser } from '@/lib/useUser';
-import { api, ApiError } from '@/lib/api';
+import { ApiError } from '@/lib/api';
+import { useConnectDhan } from '@/lib/queries/useBrokers';
 
 export default function ConnectDhanPage() {
     const router = useRouter();
     const { user } = useUser();
     const [clientId, setClientId] = useState('');
     const [accessToken, setAccessToken] = useState('');
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const connectMutation = useConnectDhan();
 
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
         setError(null);
-        setLoading(true);
         try {
-            await api.connectDhan({ clientId, accessToken });
+            await connectMutation.mutateAsync({ clientId, accessToken });
             router.push('/brokers?connected=Dhan');
         } catch (err) {
             setError(err instanceof ApiError ? err.message : 'Could not connect Dhan. Check your details and try again.');
-        } finally {
-            setLoading(false);
         }
     }
 
@@ -74,7 +72,7 @@ export default function ConnectDhanPage() {
                             type="password"
                         />
 
-                        <Button type="submit" size="lg" loading={loading} className="w-full">
+                        <Button type="submit" size="lg" loading={connectMutation.isPending} className="w-full">
                             Connect Dhan
                         </Button>
                     </form>

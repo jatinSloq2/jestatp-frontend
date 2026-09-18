@@ -9,7 +9,9 @@ import { Banner } from '@/components/ui/banner';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useUser } from '@/lib/useUser';
-import { api, ApiError, BrokerConnection, BrokerName, SupportedBroker } from '@/lib/api';
+import { ApiError, BrokerName } from '@/lib/api';
+import { useConnectedBrokers } from '@/components/trading/broker-picker';
+import { useSupportedBrokers, useSyncBroker, useDisconnectBroker } from '@/lib/queries/useBrokers';
 
 const connectHrefByBroker: Record<BrokerName, string> = {
     dhan: '/brokers/connect/dhan',
@@ -19,36 +21,17 @@ const connectHrefByBroker: Record<BrokerName, string> = {
 
 export default function BrokersPage() {
     const { user, loading: userLoading } = useUser();
-    const [supported, setSupported] = useState<SupportedBroker[] | null>(null);
-    const [connections, setConnections] = useState<BrokerConnection[] | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const { connections, error: connectionsError, loading: connectionsLoading, ...connectedBrokersRest } = useConnectedBrokers();
+    void connectedBrokersRest; // selectedBroker/setBroker aren't used on this page — every connection is shown at once
+    const supportedQuery = useSupportedBrokers();
+    const syncMutation = useSyncBroker();
+    const disconnectMutation = useDisconnectBroker();
+
     const [notice, setNotice] = useState<string | null>(null);
+    const [actionError, setActionError] = useState<string | null>(null);
     const [busyBroker, setBusyBroker] = useState<BrokerName | null>(null);
-    const [refreshing, setRefreshing] = useState(false);
-
-    async function loadAll() {
-        setError(null);
-        try {
-            const [brokers, conns] = await Promise.all([api.listSupportedBrokers(), api.listBrokerConnections()]);
-            setSupported(brokers);
-            setConnections(conns);
-        } catch (err) {
-            setError(err instanceof ApiError ? err.message : 'Could not load broker connections.');
-        }
-    }
-
-    async function handleRefresh() {
-        setRefreshing(true);
-        try {
-            await loadAll();
-        } finally {
-            setRefreshing(false);
-        }
-    }
 
     useEffect(() => {
-        loadAll();
-
         // If we just landed here from a successful connect flow.
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
@@ -57,7 +40,6 @@ export default function BrokersPage() {
                 window.history.replaceState({}, '', '/brokers');
             }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     function connectionFor(broker: BrokerName) {
@@ -66,12 +48,12 @@ export default function BrokersPage() {
 
     async function handleSync(broker: BrokerName) {
         setBusyBroker(broker);
-        setError(null);
+        setActionError(null);
         try {
-            await api.syncBroker(broker);
+            await syncMutation.mutateAsync(broker);
             setNotice('Sync queued — refresh in a few seconds to see updated data.');
         } catch (err) {
-            setError(err instanceof ApiError ? err.message : 'Could not queue sync.');
+            setActionError(err instanceof ApiError ? err.message : 'Could not queue sync.');
         } finally {
             setBusyBroker(null);
         }
@@ -80,18 +62,20 @@ export default function BrokersPage() {
     async function handleDisconnect(broker: BrokerName) {
         if (!confirm(`Disconnect ${broker}? You'll need to reconnect to sync data again.`)) return;
         setBusyBroker(broker);
-        setError(null);
+        setActionError(null);
         try {
-            await api.disconnectBroker(broker);
-            await loadAll();
+            await disconnectMutation.mutateAsync(broker);
         } catch (err) {
-            setError(err instanceof ApiError ? err.message : 'Could not disconnect.');
+            setActionError(err instanceof ApiError ? err.message : 'Could not disconnect.');
         } finally {
             setBusyBroker(null);
         }
     }
 
-    const loading = userLoading || !supported || !connections;
+    const supported = supportedQuery.data ?? null;
+    const loading = userLoading || connectionsLoading || supportedQuery.isLoading || !supported || !connections;
+    const error = connectionsError ?? (supportedQuery.error instanceof ApiError ? supportedQuery.error.message : null) ?? actionError;
+    const refreshing = supportedQuery.isFetching;
 
     return (
         <DashboardShell user={user}>
@@ -103,7 +87,7 @@ export default function BrokersPage() {
                             Connect a broker account to sync live orders, positions, and funds.
                         </p>
                     </div>
-                    <RefreshButton onClick={handleRefresh} loading={refreshing} />
+                    <RefreshButton onClick={() => supportedQuery.refetch()} loading={refreshing} />
                 </div>
 
                 {notice ? <Banner tone="positive">{notice}</Banner> : null}

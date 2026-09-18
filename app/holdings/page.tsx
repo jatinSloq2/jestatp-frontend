@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { Card } from '@/components/ui/card';
@@ -9,8 +9,11 @@ import { Banner } from '@/components/ui/banner';
 import { BrokerSelect, useConnectedBrokers } from '@/components/trading/broker-picker';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useUser } from '@/lib/useUser';
-import { api, ApiError, HoldingRecord, SyncedPaginationMeta } from '@/lib/api';
+import { HoldingRecord } from '@/lib/api';
 import { liveTickFor, useLiveTicks } from '@/lib/useLiveTicks';
+import { useHoldings } from '@/lib/queries/useHoldings';
+import { useSyncAndRefetch } from '@/lib/queries/useOrders';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 function pnlClass(value: number) {
   if (value > 0) return 'text-pnl-positive';
@@ -32,47 +35,16 @@ export default function HoldingsPage() {
   const { connections, connectedBrokers, broker, setBroker, error: brokerError, loading: brokersLoading } = useConnectedBrokers();
 
   const [page, setPage] = useState(1);
-  const [holdings, setHoldings] = useState<HoldingRecord[] | null>(null);
-  const [meta, setMeta] = useState<SyncedPaginationMeta | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [syncing, setSyncing] = useState(false);
 
-  async function load() {
-    if (!broker) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, meta: m } = await api.listHoldings({ broker, page });
-      setHoldings(data);
-      setMeta(m);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not load holdings.');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { data, isLoading, isFetching, error, refetch } = useHoldings({ broker, page });
+  const { sync, syncing } = useSyncAndRefetch(queryKeys.holdings.list({ broker: broker!, page }));
 
-  useEffect(() => {
+  const holdings = data?.data ?? null;
+  const meta = data?.meta ?? null;
+
+  function handleBrokerChange(next: Parameters<typeof setBroker>[0]) {
+    setBroker(next);
     setPage(1);
-  }, [broker]);
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [broker, page]);
-
-  async function handleSync() {
-    if (!broker) return;
-    setSyncing(true);
-    try {
-      await api.syncBroker(broker);
-      setTimeout(load, 1500);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not queue sync.');
-    } finally {
-      setSyncing(false);
-    }
   }
 
   // Holdings are always equity/delivery — subscribe every row for a live LTP
@@ -114,7 +86,7 @@ export default function HoldingsPage() {
         </div>
 
         {brokerError ? <Banner tone="negative">{brokerError}</Banner> : null}
-        {error ? <Banner tone="negative">{error}</Banner> : null}
+        {error ? <Banner tone="negative">{error.message}</Banner> : null}
 
         {!brokersLoading && connectedBrokers.length === 0 ? (
           <Card>
@@ -127,7 +99,7 @@ export default function HoldingsPage() {
           <>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-3">
-                {connections ? <BrokerSelect connections={connectedBrokers} value={broker} onChange={setBroker} /> : null}
+                {connections ? <BrokerSelect connections={connectedBrokers} value={broker} onChange={handleBrokerChange} /> : null}
                 {anyLive ? (
                   <span className="flex items-center gap-1.5 rounded-full border border-pnl-positive/40 bg-pnl-positive/10 px-2.5 py-1 text-xs font-medium text-pnl-positive">
                     <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-pnl-positive" />
@@ -139,8 +111,8 @@ export default function HoldingsPage() {
                 <span className="text-xs text-text-tertiary">
                   {meta?.lastSyncedAt ? `Synced ${new Date(meta.lastSyncedAt).toLocaleTimeString()}` : 'Never synced'}
                 </span>
-                <RefreshButton onClick={load} loading={loading} />
-                <Button type="button" variant="secondary" size="md" loading={syncing} onClick={handleSync}>
+                <RefreshButton onClick={() => refetch()} loading={isFetching} />
+                <Button type="button" variant="secondary" size="md" loading={syncing} onClick={() => broker && sync(broker)}>
                   Sync now
                 </Button>
               </div>
@@ -170,7 +142,7 @@ export default function HoldingsPage() {
             ) : null}
 
             <Card className="overflow-x-auto">
-              {loading || !holdings ? (
+              {isLoading || !holdings ? (
                 <p className="text-sm text-text-secondary">Loading holdings…</p>
               ) : holdings.length === 0 ? (
                 <p className="text-sm text-text-secondary">No holdings found in your DEMAT account.</p>
