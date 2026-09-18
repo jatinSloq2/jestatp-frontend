@@ -1,29 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { api, ApiError, BrokerConnection, BrokerName } from '@/lib/api';
+import { BrokerConnection, BrokerName } from '@/lib/api';
 import { Select } from '@/components/ui/select';
 
-export function useConnectedBrokers() {
-  const [connections, setConnections] = useState<BrokerConnection[] | null>(null);
-  const [broker, setBroker] = useState<BrokerName | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    api
-      .listBrokerConnections()
-      .then((conns) => {
-        setConnections(conns);
-        const connected = conns.find((c) => c.status === 'connected');
-        if (connected) setBroker(connected.broker);
-      })
-      .catch((err) => setError(err instanceof ApiError ? err.message : 'Could not load your broker connections.'));
-  }, []);
-
-  const connectedBrokers = connections?.filter((c) => c.status === 'connected') ?? [];
-
-  return { connections, connectedBrokers, broker, setBroker, error, loading: connections === null && !error };
-}
+/**
+ * Re-exported here (rather than importing `lib/queries/useBrokers` directly
+ * everywhere) so every existing `import { useConnectedBrokers } from
+ * '@/components/trading/broker-picker'` call site keeps working unchanged.
+ * The implementation now fetches via React Query (one shared, cached
+ * `/brokers/connections` request instead of one per page) and stores the
+ * selected broker in Redux instead of page-local `useState`, so it survives
+ * navigating between Orders / Positions / Holdings / Funds.
+ */
+export { useConnectedBrokers } from '@/lib/queries/useBrokers';
 
 export function BrokerSelect({
   connections,

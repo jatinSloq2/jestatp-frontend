@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { Card } from '@/components/ui/card';
@@ -9,7 +9,9 @@ import { Banner } from '@/components/ui/banner';
 import { BrokerSelect, useConnectedBrokers } from '@/components/trading/broker-picker';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useUser } from '@/lib/useUser';
-import { api, ApiError, OrderRecord, OrderSegment, SyncedPaginationMeta } from '@/lib/api';
+import { OrderRecord, OrderSegment } from '@/lib/api';
+import { useOrders, useSyncAndRefetch } from '@/lib/queries/useOrders';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 const SEGMENTS: (OrderSegment | 'all')[] = ['all', 'equity', 'fno', 'currency', 'commodity'];
 
@@ -31,51 +33,21 @@ export default function OrdersPage() {
 
   const [segment, setSegment] = useState<OrderSegment | 'all'>('all');
   const [page, setPage] = useState(1);
-  const [orders, setOrders] = useState<OrderRecord[] | null>(null);
-  const [meta, setMeta] = useState<SyncedPaginationMeta | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [syncing, setSyncing] = useState(false);
 
-  async function load() {
-    if (!broker) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, meta: m } = await api.listOrders({
-        broker,
-        segment: segment === 'all' ? undefined : segment,
-        page,
-      });
-      setOrders(data);
-      setMeta(m);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not load orders.');
-    } finally {
-      setLoading(false);
-    }
+  const { data, isLoading, isFetching, error } = useOrders({ broker, segment, page });
+  const { sync, syncing } = useSyncAndRefetch(queryKeys.orders.list({ broker: broker!, segment, page }));
+
+  const orders = data?.data ?? null;
+  const meta = data?.meta ?? null;
+
+  function handleSegmentChange(next: OrderSegment | 'all') {
+    setSegment(next);
+    setPage(1);
   }
 
-  useEffect(() => {
+  function handleBrokerChange(next: Parameters<typeof setBroker>[0]) {
+    setBroker(next);
     setPage(1);
-  }, [broker, segment]);
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [broker, segment, page]);
-
-  async function handleSync() {
-    if (!broker) return;
-    setSyncing(true);
-    try {
-      await api.syncBroker(broker);
-      setTimeout(load, 1500);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not queue sync.');
-    } finally {
-      setSyncing(false);
-    }
   }
 
   return (
@@ -87,7 +59,7 @@ export default function OrdersPage() {
         </div>
 
         {brokerError ? <Banner tone="negative">{brokerError}</Banner> : null}
-        {error ? <Banner tone="negative">{error}</Banner> : null}
+        {error ? <Banner tone="negative">{error.message}</Banner> : null}
 
         {!brokersLoading && connectedBrokers.length === 0 ? (
           <Card>
@@ -100,13 +72,13 @@ export default function OrdersPage() {
           <>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-3">
-                {connections ? <BrokerSelect connections={connectedBrokers} value={broker} onChange={setBroker} /> : null}
+                {connections ? <BrokerSelect connections={connectedBrokers} value={broker} onChange={handleBrokerChange} /> : null}
                 <div className="flex gap-2">
                   {SEGMENTS.map((s) => (
                     <button
                       key={s}
                       type="button"
-                      onClick={() => setSegment(s)}
+                      onClick={() => handleSegmentChange(s)}
                       className={`rounded-full border px-3 py-1.5 text-sm font-medium capitalize transition-colors ${
                         segment === s
                           ? 'border-accent-trust bg-accent-trust-soft text-accent-trust-strong'
@@ -122,15 +94,15 @@ export default function OrdersPage() {
                 <span className="text-xs text-text-tertiary">
                   {meta?.lastSyncedAt ? `Synced ${new Date(meta.lastSyncedAt).toLocaleTimeString()}` : 'Never synced'}
                 </span>
-                <RefreshButton onClick={load} loading={loading} />
-                <Button type="button" variant="secondary" size="md" loading={syncing} onClick={handleSync}>
+                <RefreshButton onClick={() => broker && sync(broker)} loading={isFetching} />
+                <Button type="button" variant="secondary" size="md" loading={syncing} onClick={() => broker && sync(broker)}>
                   Sync now
                 </Button>
               </div>
             </div>
 
             <Card className="overflow-x-auto">
-              {loading || !orders ? (
+              {isLoading || !orders ? (
                 <p className="text-sm text-text-secondary">Loading orders…</p>
               ) : orders.length === 0 ? (
                 <p className="text-sm text-text-secondary">No orders found.</p>

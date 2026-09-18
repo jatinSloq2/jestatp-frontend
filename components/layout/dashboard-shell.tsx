@@ -1,10 +1,11 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
+import { ReactNode } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
-import { api, User } from '@/lib/api';
+import { User } from '@/lib/api';
+import { useLogout } from '@/lib/queries/useAuth';
 
 const Logo = () => (
   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-accent-trust text-text-on-accent">
@@ -66,18 +67,11 @@ function NavLink({ item }: { item: NavItem }) {
 }
 
 export function DashboardShell({ user, children }: { user: User | null; children: ReactNode }) {
-  const router = useRouter();
-  const [loggingOut, setLoggingOut] = useState(false);
+  const logoutMutation = useLogout();
+  const loggingOut = logoutMutation.isPending;
 
-  async function handleLogout() {
-    setLoggingOut(true);
-    try {
-      await api.logout();
-    } catch {
-      // Cookies may already be gone server-side; proceed to login regardless.
-    } finally {
-      router.push('/login');
-    }
+  function handleLogout() {
+    logoutMutation.mutate();
   }
 
   const initials = user?.fullName
