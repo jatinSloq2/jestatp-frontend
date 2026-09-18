@@ -6,7 +6,15 @@ import { Card } from '@/components/ui/card';
 import { Banner } from '@/components/ui/banner';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Button } from '@/components/ui/button';
+import { StrategyStatusBadge } from '@/components/ui/status-badge';
+import { useConnectedBrokers } from '@/components/trading/broker-picker';
 import { useUser } from '@/lib/useUser';
+import { useFunds } from '@/lib/queries/useFunds';
+import { useHoldings } from '@/lib/queries/useHoldings';
+import { usePositions } from '@/lib/queries/usePositions';
+import { useOrders } from '@/lib/queries/useOrders';
+import { useStrategies } from '@/lib/queries/useStrategies';
+import { formatCurrency, formatPnl, formatPnlPercent, pnlClass, relativeTime } from '@/lib/format';
 
 const modules = [
   {
@@ -42,8 +50,43 @@ const modules = [
   },
 ];
 
+function StatTile({
+  label,
+  value,
+  valueClassName,
+  sub,
+  subClassName,
+  loading,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+  sub?: string;
+  subClassName?: string;
+  loading?: boolean;
+}) {
+  return (
+    <Card>
+      <p className="text-sm text-text-secondary">{label}</p>
+      {loading ? (
+        <div className="mt-2 h-7 w-24 animate-pulse rounded bg-surface-raised" />
+      ) : (
+        <p className={`mt-1.5 font-mono text-xl font-semibold tabular ${valueClassName ?? 'text-text-primary'}`}>{value}</p>
+      )}
+      {sub ? <p className={`mt-1 text-xs ${subClassName ?? 'text-text-tertiary'}`}>{sub}</p> : null}
+    </Card>
+  );
+}
+
 export default function DashboardPage() {
   const { user, loading, error, refresh } = useUser();
+  const { broker, connectedBrokers, loading: brokersLoading } = useConnectedBrokers();
+
+  const fundsQuery = useFunds(broker);
+  const holdingsQuery = useHoldings({ broker, page: 1, limit: 100 });
+  const positionsQuery = usePositions({ broker, segment: 'all', page: 1, limit: 100 });
+  const recentOrdersQuery = useOrders({ broker, segment: 'all', page: 1, limit: 5 });
+  const strategiesQuery = useStrategies({ limit: 100 });
 
   if (loading) {
     return (
@@ -52,6 +95,30 @@ export default function DashboardPage() {
       </DashboardShell>
     );
   }
+
+  const hasBroker = broker !== null && connectedBrokers.length > 0;
+
+  const holdings = holdingsQuery.data?.data ?? [];
+  const holdingsRows = holdings.map((h) => {
+    const price = h.lastTradedPrice ?? h.averagePrice;
+    const currentValue = price * h.quantity;
+    const investedValue = h.averagePrice * h.quantity;
+    return { currentValue, investedValue };
+  });
+  const totalInvested = holdingsRows.reduce((sum, r) => sum + r.investedValue, 0);
+  const totalCurrent = holdingsRows.reduce((sum, r) => sum + r.currentValue, 0);
+  const holdingsPnl = totalCurrent - totalInvested;
+  const holdingsPnlPercent = totalInvested !== 0 ? (holdingsPnl / totalInvested) * 100 : 0;
+
+  const positions = positionsQuery.data?.data ?? [];
+  const positionsPnl = positions.reduce((sum, p) => sum + p.realizedPnl + p.unrealizedPnl, 0);
+  const openPositionsCount = positionsQuery.data?.meta.total ?? positions.length;
+
+  const strategies = strategiesQuery.data?.data ?? [];
+  const activeStrategiesCount = strategies.filter((s) => s.status === 'active').length;
+  const totalStrategiesCount = strategiesQuery.data?.meta.total ?? strategies.length;
+
+  const recentOrders = recentOrdersQuery.data?.data ?? [];
 
   return (
     <DashboardShell user={user}>
@@ -68,54 +135,121 @@ export default function DashboardPage() {
 
         {error ? <Banner tone="negative">{error}</Banner> : null}
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Card title="Account status">
-            <dl className="flex flex-col gap-3 text-sm">
-              <div className="flex items-center justify-between">
-                <dt className="text-text-secondary">Email</dt>
-                <dd className="font-medium text-text-primary">{user?.email}</dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-text-secondary">Email verified</dt>
-                <dd className={user?.isEmailVerified ? 'text-pnl-positive' : 'text-risk-warning'}>
-                  {user?.isEmailVerified ? 'Yes' : 'No'}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-text-secondary">Two-factor auth</dt>
-                <dd className={user?.twoFactorEnabled ? 'text-pnl-positive' : 'text-text-tertiary'}>
-                  {user?.twoFactorEnabled ? `Enabled (${user.twoFactorMethod})` : 'Disabled'}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-text-secondary">Sign-in method</dt>
-                <dd className="font-medium capitalize text-text-primary">{user?.authProvider}</dd>
-              </div>
-            </dl>
-            <Link
-              href="/settings/security"
-              className="mt-5 inline-block text-sm font-medium text-accent-trust hover:text-accent-trust-strong"
-            >
-              Manage security settings →
+        {!brokersLoading && !hasBroker ? (
+          <Banner tone="neutral">
+            Connect a broker to see your portfolio value, open positions, and recent trades here.{' '}
+            <Link href="/brokers" className="font-medium text-accent-trust hover:text-accent-trust-strong">
+              Connect now →
             </Link>
+          </Banner>
+        ) : null}
+
+        {hasBroker ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatTile
+              label="Portfolio value"
+              value={formatCurrency(totalCurrent)}
+              loading={holdingsQuery.isLoading}
+              sub={holdings.length > 0 ? `${formatPnl(holdingsPnl)} (${formatPnlPercent(holdingsPnlPercent)})` : 'No holdings yet'}
+              subClassName={holdings.length > 0 ? pnlClass(holdingsPnl) : 'text-text-tertiary'}
+            />
+            <StatTile
+              label="Available balance"
+              value={fundsQuery.data ? formatCurrency(fundsQuery.data.availableBalance) : '—'}
+              loading={fundsQuery.isLoading}
+              sub={fundsQuery.data ? `${formatCurrency(fundsQuery.data.usedMargin)} used margin` : undefined}
+            />
+            <StatTile
+              label="Open positions"
+              value={String(openPositionsCount)}
+              loading={positionsQuery.isLoading}
+              sub={positions.length > 0 ? `${formatPnl(positionsPnl)} unrealized + realized` : 'No open positions'}
+              subClassName={positions.length > 0 ? pnlClass(positionsPnl) : 'text-text-tertiary'}
+            />
+            <StatTile
+              label="Active strategies"
+              value={String(activeStrategiesCount)}
+              loading={strategiesQuery.isLoading}
+              sub={`${totalStrategiesCount} total`}
+            />
+          </div>
+        ) : null}
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Card
+            title="Recent trades"
+            className="lg:col-span-2"
+            description={hasBroker ? undefined : 'Connect a broker to see your order activity here.'}
+          >
+            {!hasBroker ? null : recentOrdersQuery.isLoading ? (
+              <p className="text-sm text-text-secondary">Loading recent trades…</p>
+            ) : recentOrders.length === 0 ? (
+              <p className="text-sm text-text-secondary">No orders placed yet.</p>
+            ) : (
+              <div className="flex flex-col divide-y divide-border">
+                {recentOrders.map((o) => (
+                  <div key={o.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${
+                          o.side === 'BUY'
+                            ? 'border-pnl-positive/30 bg-pnl-positive/10 text-pnl-positive'
+                            : 'border-risk-critical/30 bg-risk-critical/10 text-pnl-negative'
+                        }`}
+                      >
+                        {o.side}
+                      </span>
+                      <div>
+                        <p className="text-sm font-medium text-text-primary">{o.tradingSymbol}</p>
+                        <p className="text-xs text-text-tertiary">
+                          {o.quantity} qty · {o.productType} · {relativeTime(o.placedAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-mono text-sm text-text-primary">{o.averagePrice ?? o.price ?? '—'}</p>
+                      <p className="text-xs text-text-tertiary">{o.status.replace(/_/g, ' ')}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {hasBroker && recentOrders.length > 0 ? (
+              <Link href="/orders" className="mt-4 inline-block text-sm font-medium text-accent-trust hover:text-accent-trust-strong">
+                View all orders →
+              </Link>
+            ) : null}
           </Card>
 
-          <Card title="Get started">
-            <p className="text-sm text-text-secondary">
-              Connect a broker to start syncing live orders, positions, and funds — then build your first strategy.
-            </p>
-            <div className="mt-4 flex gap-2">
-              <Link href="/brokers" className="flex-1">
-                <Button type="button" className="w-full">
-                  Connect a broker
-                </Button>
-              </Link>
-              <Link href="/strategies/new" className="flex-1">
-                <Button type="button" variant="secondary" className="w-full">
-                  New strategy
-                </Button>
-              </Link>
-            </div>
+          <Card title="Strategies">
+            {strategiesQuery.isLoading ? (
+              <p className="text-sm text-text-secondary">Loading…</p>
+            ) : strategies.length === 0 ? (
+              <>
+                <p className="text-sm text-text-secondary">You haven&rsquo;t built a strategy yet.</p>
+                <Link href="/strategies/new" className="mt-4 inline-block">
+                  <Button type="button" className="w-full">
+                    New strategy
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {strategies.slice(0, 4).map((s) => (
+                  <Link
+                    key={s.id}
+                    href={`/strategies/${s.id}`}
+                    className="flex items-center justify-between gap-2 rounded px-1 py-1 hover:bg-surface-raised"
+                  >
+                    <span className="truncate text-sm font-medium text-text-primary">{s.name}</span>
+                    <StrategyStatusBadge status={s.status} />
+                  </Link>
+                ))}
+                <Link href="/strategies" className="mt-1 text-sm font-medium text-accent-trust hover:text-accent-trust-strong">
+                  View all strategies →
+                </Link>
+              </div>
+            )}
           </Card>
         </div>
 

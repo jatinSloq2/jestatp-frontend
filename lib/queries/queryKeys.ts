@@ -17,15 +17,16 @@ export const queryKeys = {
     connections: () => ['brokers', 'connections'] as const,
   },
   orders: {
-    list: (params: { broker: BrokerName; segment?: OrderSegment | 'all'; page: number }) =>
-      ['orders', params.broker, params.segment ?? 'all', params.page] as const,
+    list: (params: { broker: BrokerName; segment?: OrderSegment | 'all'; page: number; limit?: number }) =>
+      ['orders', params.broker, params.segment ?? 'all', params.page, params.limit ?? 'default'] as const,
   },
   positions: {
-    list: (params: { broker: BrokerName; segment?: OrderSegment | 'all'; page: number }) =>
-      ['positions', params.broker, params.segment ?? 'all', params.page] as const,
+    list: (params: { broker: BrokerName; segment?: OrderSegment | 'all'; page: number; limit?: number }) =>
+      ['positions', params.broker, params.segment ?? 'all', params.page, params.limit ?? 'default'] as const,
   },
   holdings: {
-    list: (params: { broker: BrokerName; page: number }) => ['holdings', params.broker, params.page] as const,
+    list: (params: { broker: BrokerName; page: number; limit?: number }) =>
+      ['holdings', params.broker, params.page, params.limit ?? 'default'] as const,
   },
   funds: {
     detail: (broker: BrokerName) => ['funds', broker] as const,

@@ -3,14 +3,20 @@ import { api, ApiError, BrokerName, OrderRecord, OrderSegment, SyncedPaginationM
 import { queryKeys } from './queryKeys';
 import { useSyncBroker } from './useBrokers';
 
-export function useOrders(params: { broker: BrokerName | null; segment: OrderSegment | 'all'; page: number }) {
+export function useOrders(params: { broker: BrokerName | null; segment: OrderSegment | 'all'; page: number; limit?: number }) {
   return useQuery<{ data: OrderRecord[]; meta: SyncedPaginationMeta }, ApiError>({
-    queryKey: queryKeys.orders.list({ broker: params.broker as BrokerName, segment: params.segment, page: params.page }),
+    queryKey: queryKeys.orders.list({
+      broker: params.broker as BrokerName,
+      segment: params.segment,
+      page: params.page,
+      limit: params.limit,
+    }),
     queryFn: () =>
       api.listOrders({
         broker: params.broker as BrokerName,
         segment: params.segment === 'all' ? undefined : params.segment,
         page: params.page,
+        limit: params.limit,
       }),
     enabled: params.broker !== null,
     // Keeps the previous page's rows on screen while the next page loads,
