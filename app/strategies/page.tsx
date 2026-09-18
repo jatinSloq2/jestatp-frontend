@@ -102,7 +102,12 @@ export default function StrategiesPage() {
             {strategies.map((s) => {
               const busy = busyId === s.id;
               return (
-                <Card key={s.id} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <Card
+                  key={s.id}
+                  className={`flex flex-col gap-3 border-l-4 sm:flex-row sm:items-center sm:justify-between ${
+                    s.status === 'active' ? 'border-l-pnl-positive' : 'border-l-transparent'
+                  }`}
+                >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <Link href={`/strategies/${s.id}`} className="truncate text-base font-semibold text-text-primary hover:text-accent-trust">

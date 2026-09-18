@@ -16,15 +16,15 @@ import { queryKeys } from '@/lib/queries/queryKeys';
 const SEGMENTS: (OrderSegment | 'all')[] = ['all', 'equity', 'fno', 'currency', 'commodity'];
 
 const statusTone: Record<OrderRecord['status'], string> = {
-  CREATED: 'text-text-tertiary',
-  VALIDATED: 'text-text-tertiary',
-  SUBMITTED: 'text-risk-warning',
-  OPEN: 'text-risk-warning',
-  PARTIALLY_FILLED: 'text-risk-warning',
-  FILLED: 'text-pnl-positive',
-  CANCEL_REQUESTED: 'text-text-tertiary',
-  CANCELLED: 'text-text-tertiary',
-  REJECTED: 'text-pnl-negative',
+  CREATED: 'bg-surface-raised text-text-tertiary border-border-strong',
+  VALIDATED: 'bg-surface-raised text-text-tertiary border-border-strong',
+  SUBMITTED: 'bg-risk-warning/10 text-risk-warning border-risk-warning/30',
+  OPEN: 'bg-risk-warning/10 text-risk-warning border-risk-warning/30',
+  PARTIALLY_FILLED: 'bg-risk-warning/10 text-risk-warning border-risk-warning/30',
+  FILLED: 'bg-pnl-positive/10 text-pnl-positive border-pnl-positive/30',
+  CANCEL_REQUESTED: 'bg-surface-raised text-text-tertiary border-border-strong',
+  CANCELLED: 'bg-surface-raised text-text-tertiary border-border-strong',
+  REJECTED: 'bg-risk-critical/10 text-pnl-negative border-risk-critical/30',
 };
 
 export default function OrdersPage() {
@@ -124,8 +124,16 @@ export default function OrdersPage() {
                     {orders.map((o) => (
                       <tr key={o.id}>
                         <td className="py-2.5 pr-4 font-medium text-text-primary">{o.tradingSymbol}</td>
-                        <td className={`py-2.5 pr-4 font-medium ${o.side === 'BUY' ? 'text-pnl-positive' : 'text-pnl-negative'}`}>
-                          {o.side}
+                        <td className="py-2.5 pr-4">
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${
+                              o.side === 'BUY'
+                                ? 'border-pnl-positive/30 bg-pnl-positive/10 text-pnl-positive'
+                                : 'border-risk-critical/30 bg-risk-critical/10 text-pnl-negative'
+                            }`}
+                          >
+                            {o.side}
+                          </span>
                         </td>
                         <td className="py-2.5 pr-4 text-text-secondary">{o.orderType}</td>
                         <td className="py-2.5 pr-4 text-text-secondary">{o.productType}</td>
@@ -135,7 +143,13 @@ export default function OrdersPage() {
                         <td className="py-2.5 pr-4 font-mono text-text-secondary">
                           {o.price ?? '—'} ({o.averagePrice ?? '—'})
                         </td>
-                        <td className={`py-2.5 pr-4 font-medium ${statusTone[o.status]}`}>{o.status.replace(/_/g, ' ')}</td>
+                        <td className="py-2.5 pr-4">
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusTone[o.status]}`}
+                          >
+                            {o.status.replace(/_/g, ' ')}
+                          </span>
+                        </td>
                         <td className="py-2.5 text-text-tertiary">{o.placedAt ? new Date(o.placedAt).toLocaleString() : '—'}</td>
                       </tr>
                     ))}

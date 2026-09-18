@@ -103,7 +103,11 @@ export default function PositionsPage() {
             </div>
 
             {positions && positions.length > 0 ? (
-              <Card className="flex items-center justify-between">
+              <Card
+                className={`flex items-center justify-between ${
+                  totalPnl >= 0 ? 'border-pnl-positive/30 bg-pnl-positive/5' : 'border-pnl-negative/30 bg-pnl-negative/5'
+                }`}
+              >
                 <span className="text-sm text-text-secondary">Total P&L (this page)</span>
                 <span className={`font-mono text-lg font-semibold ${pnlClass(totalPnl)}`}>₹{formatPnl(totalPnl)}</span>
               </Card>
