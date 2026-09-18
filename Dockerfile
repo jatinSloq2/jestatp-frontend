@@ -25,6 +25,7 @@ ENV NODE_ENV=production
 RUN addgroup -g 1001 nodejs && adduser -S -u 1001 -G nodejs appuser
 
 COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 

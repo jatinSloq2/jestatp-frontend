@@ -1,0 +1,29 @@
+<svg width="64" height="64" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="jestatp-icon-grad" x1="2" y1="30" x2="30" y2="2" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3D5CD1" />
+      <stop offset="1" stop-color="#63AD0E" />
+    </linearGradient>
+  </defs>
+
+  <rect x="1" y="1" width="30" height="30" rx="9" fill="url(#jestatp-icon-grad)" />
+
+  <rect x="7" y="18" width="3.4" height="7" rx="1.2" fill="#FFFFFF" fill-opacity="0.55" />
+  <rect x="13.3" y="13.5" width="3.4" height="11.5" rx="1.2" fill="#FFFFFF" fill-opacity="0.75" />
+  <rect x="19.6" y="9.5" width="3.4" height="15.5" rx="1.2" fill="#FFFFFF" />
+
+  <path
+    d="M6.5 17.5L13 11.5L17 14.8L25.2 6"
+    stroke="#FFFFFF"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M19.6 6H25.2V11.6"
+    stroke="#FFFFFF"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

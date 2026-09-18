@@ -60,7 +60,7 @@ export default function FundsPage() {
               <p className="text-sm text-text-secondary">Loading funds…</p>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Card>
+                <Card className="border-accent-trust/30 bg-gradient-to-br from-accent-trust-soft via-surface to-surface">
                   <p className="text-sm text-text-secondary">Available balance</p>
                   <p className="mt-2 font-mono text-2xl font-semibold text-pnl-positive">{formatCurrency(funds.availableBalance)}</p>
                 </Card>

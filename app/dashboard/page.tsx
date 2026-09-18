@@ -8,6 +8,40 @@ import { RefreshButton } from '@/components/ui/refresh-button';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/lib/useUser';
 
+const modules = [
+  {
+    title: 'Brokers',
+    description: 'Connect and manage broker accounts.',
+    href: '/brokers',
+    icon: (
+      <path d="M4 10L12 4L20 10V19C20 19.55 19.55 20 19 20H5C4.45 20 4 19.55 4 19V10Z" strokeWidth="1.6" strokeLinejoin="round" />
+    ),
+  },
+  {
+    title: 'Orders',
+    description: 'Your order book, synced live.',
+    href: '/orders',
+    icon: <path d="M6 4H18V20L15 18L12 20L9 18L6 20V4Z" strokeWidth="1.6" strokeLinejoin="round" />,
+  },
+  {
+    title: 'Positions',
+    description: 'Open positions with real-time P&L.',
+    href: '/positions',
+    icon: <path d="M4 18L9 11L13 14L20 6" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />,
+  },
+  {
+    title: 'Funds',
+    description: 'Available balance and margin.',
+    href: '/funds',
+    icon: (
+      <>
+        <circle cx="12" cy="12" r="8" strokeWidth="1.6" />
+        <path d="M12 8V16M9.5 10.2C9.5 9 10.6 8.3 12 8.3C13.4 8.3 14.5 9 14.5 10.1C14.5 12.3 9.5 11.7 9.5 13.9C9.5 15 10.6 15.7 12 15.7C13.4 15.7 14.5 15 14.5 13.8" strokeWidth="1.4" strokeLinecap="round" />
+      </>
+    ),
+  },
+];
+
 export default function DashboardPage() {
   const { user, loading, error, refresh } = useUser();
 
@@ -22,12 +56,12 @@ export default function DashboardPage() {
   return (
     <DashboardShell user={user}>
       <div className="flex flex-col gap-8">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-border bg-gradient-to-br from-accent-trust-soft via-surface to-surface p-6">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
               Welcome back{user?.fullName ? `, ${user.fullName.split(' ')[0]}` : ''}.
             </h1>
-            <p className="mt-1 text-base text-text-secondary">Here's where things stand on your account.</p>
+            <p className="mt-1 text-base text-text-secondary">Here&rsquo;s where things stand on your account.</p>
           </div>
           <RefreshButton onClick={refresh} loading={loading} />
         </div>
@@ -88,15 +122,19 @@ export default function DashboardPage() {
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">Trading</h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { title: 'Brokers', description: 'Connect and manage broker accounts.', href: '/brokers' },
-              { title: 'Orders', description: 'Your order book, synced live.', href: '/orders' },
-              { title: 'Positions', description: 'Open positions with real-time P&L.', href: '/positions' },
-              { title: 'Funds', description: 'Available balance and margin.', href: '/funds' },
-            ].map((mod) => (
-              <Link key={mod.title} href={mod.href} className="rounded-lg border border-border bg-surface p-4 transition-colors hover:border-accent-trust">
-                <p className="font-medium text-text-primary">{mod.title}</p>
-                <p className="mt-1.5 text-sm text-text-secondary">{mod.description}</p>
+            {modules.map((mod) => (
+              <Link
+                key={mod.title}
+                href={mod.href}
+                className="group rounded-lg border border-border bg-surface p-4 shadow-panel transition-colors hover:border-accent-trust"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-md bg-accent-trust-soft text-accent-trust-strong">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    {mod.icon}
+                  </svg>
+                </span>
+                <p className="mt-3 font-medium text-text-primary group-hover:text-accent-trust-strong">{mod.title}</p>
+                <p className="mt-1 text-sm text-text-secondary">{mod.description}</p>
               </Link>
             ))}
           </div>

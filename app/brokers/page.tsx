@@ -29,7 +29,7 @@ const brokerIconByBroker: Record<BrokerName, string> = {
 
 function BrokerIcon({ broker, name }: { broker: BrokerName; name: string }) {
     return (
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-surface-secondary">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-surface-raised">
             <Image
                 src={brokerIconByBroker[broker]}
                 alt={`${name} logo`}
@@ -133,7 +133,10 @@ export default function BrokersPage() {
                             const busy = busyBroker === broker.broker;
 
                             return (
-                                <Card key={broker.broker} className="flex flex-col justify-between">
+                                <Card
+                                    key={broker.broker}
+                                    className={`flex flex-col justify-between ${isConnected ? 'border-pnl-positive/30' : ''}`}
+                                >
                                     <div>
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2.5">

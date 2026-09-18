@@ -15,6 +15,11 @@ const sans = Inter({
 export const metadata: Metadata = {
   title: 'JestATP',
   description: 'Algorithmic trading, built on control.',
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

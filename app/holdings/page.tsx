@@ -128,7 +128,7 @@ export default function HoldingsPage() {
                   <span className="text-sm text-text-secondary">Current value</span>
                   <p className="mt-1 font-mono text-lg font-semibold text-text-primary">₹{formatMoney(totalCurrent)}</p>
                 </Card>
-                <Card>
+                <Card className={totalPnl >= 0 ? 'border-pnl-positive/30 bg-pnl-positive/5' : 'border-pnl-negative/30 bg-pnl-negative/5'}>
                   <span className="text-sm text-text-secondary">Total P&L</span>
                   <p className={`mt-1 font-mono text-lg font-semibold ${pnlClass(totalPnl)}`}>
                     ₹{formatPnl(totalPnl)}{' '}
