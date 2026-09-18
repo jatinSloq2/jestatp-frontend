@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
 import { StrategyStatusBadge } from '@/components/ui/status-badge';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { useConfirmDialog } from '@/components/ui/confirm-dialog';
 import { StrategyBacktestSection } from '@/components/strategies/strategy-backtest-section';
 import { useUser } from '@/lib/useUser';
 import { ApiError } from '@/lib/api';
@@ -36,6 +37,7 @@ export default function StrategyDetailPage() {
   const [expandedVersion, setExpandedVersion] = useState<number | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const { confirm, dialog } = useConfirmDialog();
 
   const strategyQuery = useStrategy(params.id);
   const versionsQuery = useStrategyVersions(params.id);
@@ -76,6 +78,7 @@ export default function StrategyDetailPage() {
   if (!strategy) {
     return (
       <DashboardShell user={user}>
+        {dialog}
         {error ? <Banner tone="negative">{error}</Banner> : <p className="text-text-secondary">Loading…</p>}
       </DashboardShell>
     );
@@ -83,6 +86,7 @@ export default function StrategyDetailPage() {
 
   return (
     <DashboardShell user={user}>
+      {dialog}
       <div className="flex flex-col gap-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -136,8 +140,13 @@ export default function StrategyDetailPage() {
               type="button"
               variant="destructive"
               loading={busy}
-              onClick={() => {
-                if (confirm(`Archive "${strategy.name}"?`)) {
+              onClick={async () => {
+                const ok = await confirm({
+                  title: `Archive "${strategy.name}"?`,
+                  confirmLabel: 'Archive',
+                  tone: 'destructive',
+                });
+                if (ok) {
                   runAction(() => archiveMutation.mutateAsync(strategy.id));
                 }
               }}

@@ -16,7 +16,7 @@ export function AuthShell({
 }) {
   return (
     <div className="flex min-h-screen bg-canvas">
-      <aside className="relative hidden w-[42%] shrink-0 flex-col justify-between overflow-hidden border-r border-border bg-surface px-12 py-12 lg:flex">
+      <aside className="relative hidden w-[42%] shrink-0 flex-col justify-between overflow-hidden border-r border-border bg-gradient-to-br from-accent-trust-soft via-surface to-surface px-12 py-12 lg:flex">
         <div>
           <div className="flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded bg-accent-trust text-text-on-accent">

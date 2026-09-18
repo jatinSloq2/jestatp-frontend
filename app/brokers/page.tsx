@@ -1,23 +1,45 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Banner } from '@/components/ui/banner';
-import { StatusBadge } from '@/components/ui/status-badge';
-import { RefreshButton } from '@/components/ui/refresh-button';
-import { useUser } from '@/lib/useUser';
-import { ApiError, BrokerName } from '@/lib/api';
 import { useConnectedBrokers } from '@/components/trading/broker-picker';
-import { useSupportedBrokers, useSyncBroker, useDisconnectBroker } from '@/lib/queries/useBrokers';
+import { Banner } from '@/components/ui/banner';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { useConfirmDialog } from '@/components/ui/confirm-dialog';
+import { RefreshButton } from '@/components/ui/refresh-button';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { ApiError, BrokerName } from '@/lib/api';
+import { useDisconnectBroker, useSupportedBrokers, useSyncBroker } from '@/lib/queries/useBrokers';
+import { useUser } from '@/lib/useUser';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 const connectHrefByBroker: Record<BrokerName, string> = {
     dhan: '/brokers/connect/dhan',
     zerodha: '/brokers/connect/zerodha',
     groww: '/brokers/connect/groww',
 };
+
+const brokerIconByBroker: Record<BrokerName, string> = {
+    dhan: '/brokers/dhan.png',
+    zerodha: '/brokers/Zerodha.png',
+    groww: '/brokers/Groww.png',
+};
+
+function BrokerIcon({ broker, name }: { broker: BrokerName; name: string }) {
+    return (
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-surface-secondary">
+            <Image
+                src={brokerIconByBroker[broker]}
+                alt={`${name} logo`}
+                width={32}
+                height={32}
+                className="h-full w-full object-contain"
+            />
+        </div>
+    );
+}
 
 export default function BrokersPage() {
     const { user, loading: userLoading } = useUser();
@@ -26,6 +48,7 @@ export default function BrokersPage() {
     const supportedQuery = useSupportedBrokers();
     const syncMutation = useSyncBroker();
     const disconnectMutation = useDisconnectBroker();
+    const { confirm, dialog } = useConfirmDialog();
 
     const [notice, setNotice] = useState<string | null>(null);
     const [actionError, setActionError] = useState<string | null>(null);
@@ -60,7 +83,13 @@ export default function BrokersPage() {
     }
 
     async function handleDisconnect(broker: BrokerName) {
-        if (!confirm(`Disconnect ${broker}? You'll need to reconnect to sync data again.`)) return;
+        const ok = await confirm({
+            title: `Disconnect ${broker}?`,
+            description: "You'll need to reconnect to sync data again.",
+            confirmLabel: 'Disconnect',
+            tone: 'destructive',
+        });
+        if (!ok) return;
         setBusyBroker(broker);
         setActionError(null);
         try {
@@ -79,6 +108,7 @@ export default function BrokersPage() {
 
     return (
         <DashboardShell user={user}>
+            {dialog}
             <div className="flex flex-col gap-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -106,7 +136,10 @@ export default function BrokersPage() {
                                 <Card key={broker.broker} className="flex flex-col justify-between">
                                     <div>
                                         <div className="flex items-center justify-between">
-                                            <h2 className="text-lg font-semibold tracking-tight text-text-primary">{broker.name}</h2>
+                                            <div className="flex items-center gap-2.5">
+                                                <BrokerIcon broker={broker.broker} name={broker.name} />
+                                                <h2 className="text-lg font-semibold tracking-tight text-text-primary">{broker.name}</h2>
+                                            </div>
                                             {connection ? <StatusBadge status={connection.status} /> : null}
                                         </div>
                                         <p className="mt-1 text-sm text-text-secondary">

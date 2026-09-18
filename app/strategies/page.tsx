@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
 import { StrategyStatusBadge } from '@/components/ui/status-badge';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { useConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useUser } from '@/lib/useUser';
 import { ApiError, StrategyStatus } from '@/lib/api';
 import {
@@ -25,6 +26,7 @@ export default function StrategiesPage() {
   const [statusFilter, setStatusFilter] = useState<StrategyStatus | 'all'>('all');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirmDialog();
 
   const { data, isLoading, isFetching, error, refetch } = useStrategies(
     statusFilter === 'all' ? undefined : { status: statusFilter },
@@ -50,6 +52,7 @@ export default function StrategiesPage() {
 
   return (
     <DashboardShell user={user}>
+      {dialog}
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <div>
@@ -68,11 +71,10 @@ export default function StrategiesPage() {
                 key={s}
                 type="button"
                 onClick={() => setStatusFilter(s)}
-                className={`rounded-full border px-3 py-1.5 text-sm font-medium capitalize transition-colors ${
-                  statusFilter === s
+                className={`rounded-full border px-3 py-1.5 text-sm font-medium capitalize transition-colors ${statusFilter === s
                     ? 'border-accent-trust bg-accent-trust-soft text-accent-trust-strong'
                     : 'border-border-strong text-text-secondary hover:text-text-primary'
-                }`}
+                  }`}
               >
                 {s}
               </button>
@@ -149,8 +151,14 @@ export default function StrategiesPage() {
                         variant="destructive"
                         size="md"
                         loading={busy}
-                        onClick={() => {
-                          if (confirm(`Archive "${s.name}"? This can't be undone from here.`)) {
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: `Archive "${s.name}"?`,
+                            description: "This can't be undone from here.",
+                            confirmLabel: 'Archive',
+                            tone: 'destructive',
+                          });
+                          if (ok) {
                             withBusy(s.id, () => archiveMutation.mutateAsync(s.id));
                           }
                         }}

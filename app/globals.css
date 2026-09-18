@@ -2,56 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Groww-inspired design tokens.
+ * Palette sourced from the Groww brand spec (functional simplicity,
+ * frictionless growth). Semantic token names are unchanged so every
+ * existing component keeps working — only the values shifted.
+ */
+
 :root {
   color-scheme: light;
 
-  /* Light theme (default) — white canvas, teal accent */
-  --canvas: 246 247 249;
+  /* Light theme (default) — near-white canvas, white cards, Groww blue accent */
+  --canvas: 247 248 250;
   --surface: 255 255 255;
   --surface-raised: 255 255 255;
-  --surface-sunken: 237 239 242;
-  --border: 224 228 233;
-  --border-strong: 202 208 216;
+  --surface-sunken: 244 245 247;
+  --border: 240 240 240;
+  --border-strong: 226 228 233;
 
-  --text-primary: 18 22 28;
-  --text-secondary: 91 100 114;
-  --text-tertiary: 130 139 152;
-  --text-on-accent: 246 250 249;
+  --text-primary: 45 52 60;
+  --text-secondary: 124 124 124;
+  --text-tertiary: 158 160 166;
+  --text-on-accent: 255 255 255;
 
-  --accent-trust: 31 138 124;
-  --accent-trust-strong: 22 111 100;
-  --accent-trust-soft: 226 240 237;
+  --accent-trust: 80 118 238;
+  --accent-trust-strong: 61 92 209;
+  --accent-trust-soft: 234 238 255;
 
-  --pnl-positive: 34 138 86;
-  --pnl-negative: 189 62 65;
-  --risk-warning: 168 116 21;
-  --risk-critical: 176 55 52;
+  --pnl-positive: 99 173 14;
+  --pnl-negative: 255 0 60;
+  --risk-warning: 217 138 15;
+  --risk-critical: 255 0 60;
 }
 
 :root.dark {
   color-scheme: dark;
 
-  /* Dark theme (opt-in) — deep navy/slate base */
-  --canvas: 8 11 16;
-  --surface: 14 19 27;
-  --surface-raised: 20 27 37;
-  --surface-sunken: 6 8 12;
-  --border: 32 41 55;
-  --border-strong: 47 59 77;
+  /* Dark theme (opt-in) — pure black canvas per Groww dark spec */
+  --canvas: 10 10 10;
+  --surface: 18 18 18;
+  --surface-raised: 24 24 24;
+  --surface-sunken: 15 15 15;
+  --border: 45 52 60;
+  --border-strong: 63 71 82;
 
-  --text-primary: 236 240 245;
-  --text-secondary: 148 161 180;
-  --text-tertiary: 96 108 127;
-  --text-on-accent: 6 12 12;
+  --text-primary: 245 245 245;
+  --text-secondary: 161 161 161;
+  --text-tertiary: 128 132 140;
+  --text-on-accent: 255 255 255;
 
-  --accent-trust: 45 166 150;
-  --accent-trust-strong: 74 199 181;
-  --accent-trust-soft: 22 41 39;
+  --accent-trust: 96 132 255;
+  --accent-trust-strong: 138 164 255;
+  --accent-trust-soft: 27 33 56;
 
-  --pnl-positive: 79 179 122;
-  --pnl-negative: 214 105 108;
-  --risk-warning: 205 155 62;
-  --risk-critical: 199 82 79;
+  --pnl-positive: 134 209 63;
+  --pnl-negative: 255 82 116;
+  --risk-warning: 232 165 61;
+  --risk-critical: 255 82 116;
 }
 
 * {
