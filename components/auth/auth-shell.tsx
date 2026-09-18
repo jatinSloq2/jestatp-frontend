@@ -1,6 +1,30 @@
 import Link from 'next/link';
+import { ShieldCheck, Activity, Lock, LineChart } from 'lucide-react';
 import { Logo, LogoMark } from '@/components/brand/logo';
 import { IndexTicker } from '@/components/layout/index-ticker';
+
+const FEATURES = [
+  {
+    icon: LineChart,
+    title: 'Backtest on real tick data',
+    description: 'Validate a strategy against years of historical fills before it touches live capital.',
+  },
+  {
+    icon: Activity,
+    title: 'Paper trade in parallel',
+    description: 'Run simulated and live books side by side to confirm behavior before switching over.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Built-in risk controls',
+    description: 'Position limits, drawdown stops, and kill switches enforced at the execution layer.',
+  },
+  {
+    icon: Lock,
+    title: 'Broker-grade security',
+    description: 'Read-only API keys, encrypted at rest, with full audit logs on every order sent.',
+  },
+];
 
 export function AuthShell({
   title,
@@ -26,6 +50,20 @@ export function AuthShell({
             Backtest, paper trade, and go live against your own broker
             account — with the same controls a risk desk would insist on.
           </p>
+
+          <ul className="mt-10 space-y-6">
+            {FEATURES.map(({ icon: Icon, title: featureTitle, description }) => (
+              <li key={featureTitle} className="flex items-start gap-3.5">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-text-primary">
+                  <Icon className="h-4.5 w-4.5" strokeWidth={1.75} />
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-text-primary">{featureTitle}</p>
+                  <p className="mt-0.5 text-sm text-text-secondary">{description}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
 
         <div>
