@@ -16,9 +16,9 @@ export const referenceIndices = [
  */
 export function IndexTicker({ className, compact = false }: { className?: string; compact?: boolean }) {
   return (
-    <div className={clsx('flex items-center gap-6 overflow-x-auto', className)}>
+    <div className={clsx('flex items-center justify-between overflow-x-auto px-6', className)}>
       {referenceIndices.map((row) => (
-        <div key={row.label} className="flex shrink-0 items-baseline gap-2">
+        <div key={row.label} className="flex shrink-0 items-baseline gap-4">
           <span className={clsx('font-medium text-text-tertiary', compact ? 'text-xs' : 'text-sm')}>
             {row.label}
           </span>

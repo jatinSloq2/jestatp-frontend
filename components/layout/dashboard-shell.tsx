@@ -17,7 +17,7 @@ export function DashboardShell({ user, children }: { user: User | null; children
       <TopNav user={user} />
 
       <main className="flex-1 px-6 py-8 lg:px-10 lg:py-10">
-        <div className="mx-auto max-w-6xl animate-fade-up">{children}</div>
+        <div className="mx-auto max-w-7xl animate-fade-up">{children}</div>
       </main>
 
       <Footer />

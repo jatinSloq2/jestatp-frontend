@@ -91,7 +91,7 @@ export function TopNav({ user }: { user: User | null }) {
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-6 lg:px-10">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6">
         <div className="flex items-center gap-8">
           <Link href="/dashboard" className="shrink-0">
             <Logo markSize={30} />
@@ -173,7 +173,7 @@ export function TopNav({ user }: { user: User | null }) {
       </div>
 
       <div className="hidden border-t border-border px-6 py-2 lg:block lg:px-10">
-        <IndexTicker compact className="mx-auto max-w-6xl" />
+        <IndexTicker compact className="mx-auto max-w-7xl" />
       </div>
 
       {mobileOpen ? (
