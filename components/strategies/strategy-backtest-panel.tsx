@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ApiError, BacktestResult, ConditionBlock, RiskConfig, Segment, Timeframe } from '@/lib/api';
+import { ApiError, BacktestResult, ConditionBlock, RiskConfig, Segment, StrategyLanguage, Timeframe } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
 import { RefreshButton } from '@/components/ui/refresh-button';
@@ -16,16 +16,20 @@ export function StrategyBacktestPanel({
   exchange,
   segment,
   timeframe,
+  language,
   entry,
   exit,
+  pythonCode,
   risk,
 }: {
   instrument: string;
   exchange: string;
   segment: Segment;
   timeframe: Timeframe;
-  entry: ConditionBlock;
-  exit: ConditionBlock;
+  language: StrategyLanguage;
+  entry?: ConditionBlock;
+  exit?: ConditionBlock;
+  pythonCode?: string;
   risk: RiskConfig;
 }) {
   const { connections, connectedBrokers, broker, setBroker, loading: brokersLoading } = useConnectedBrokers();
@@ -34,11 +38,28 @@ export function StrategyBacktestPanel({
   const [hasRun, setHasRun] = useState(false);
   const previewBacktestMutation = usePreviewBacktest();
 
+  const isPythonReady = language !== 'python' || Boolean(pythonCode && pythonCode.trim().length > 0);
+
   async function runBacktest() {
-    if (!broker) return;
+    if (!broker || !isPythonReady) return;
     setError(null);
     try {
-      const data = await previewBacktestMutation.mutateAsync({ instrument, exchange, segment, timeframe, entry, exit, risk, broker });
+      const data = await previewBacktestMutation.mutateAsync({
+        instrument,
+        exchange,
+        segment,
+        timeframe,
+        language,
+        entry,
+        exit,
+        pythonCode,
+        risk,
+        broker,
+        // Python strategies need a few dozen bars of lookback before their own
+        // indicators (e.g. sma(50)) are meaningful — see liveEngine.ts's
+        // DEFAULT_WARMUP for why 50 is also the live-engine default.
+        warmup: language === 'python' ? 50 : undefined,
+      });
       setResult(data);
       setHasRun(true);
     } catch (err) {
@@ -62,19 +83,27 @@ export function StrategyBacktestPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           {connections ? <BrokerSelect connections={connectedBrokers} value={broker} onChange={setBroker} /> : null}
-          <Button type="button" size="md" loading={previewBacktestMutation.isPending} disabled={!broker} onClick={runBacktest}>
+          <Button
+            type="button"
+            size="md"
+            loading={previewBacktestMutation.isPending}
+            disabled={!broker || !isPythonReady}
+            onClick={runBacktest}
+          >
             {hasRun ? 'Re-run backtest' : 'Run backtest'}
           </Button>
         </div>
         {hasRun ? <RefreshButton onClick={runBacktest} loading={previewBacktestMutation.isPending} label="Refresh" /> : null}
       </div>
 
+      {!isPythonReady ? <Banner tone="warning">Write your on_bar(ctx) function above before running a backtest.</Banner> : null}
       {error ? <Banner tone="negative">{error}</Banner> : null}
 
       {!hasRun && !previewBacktestMutation.isPending ? (
         <p className="text-sm text-text-tertiary">
-          Runs the entry/exit conditions above against real historical candles for {instrument || 'this instrument'} on{' '}
-          {exchange || 'the selected exchange'} ({timeframe}), fetched live from your connected broker — not sample data.
+          Runs {language === 'python' ? 'your on_bar() function' : 'the entry/exit conditions above'} against real historical candles
+          for {instrument || 'this instrument'} on {exchange || 'the selected exchange'} ({timeframe}), fetched live from your
+          connected broker — not sample data.
         </p>
       ) : null}
 
@@ -85,6 +114,16 @@ export function StrategyBacktestPanel({
           <p className="text-xs text-text-tertiary">
             {new Date(result.from).toLocaleDateString()} – {new Date(result.to).toLocaleDateString()} via {result.broker}
           </p>
+          {result.logs && result.logs.length > 0 ? (
+            <details className="rounded border border-border-strong bg-surface-raised p-3 text-xs">
+              <summary className="cursor-pointer select-none font-medium text-text-secondary">
+                Strategy logs ({result.logs.length})
+              </summary>
+              <pre className="mt-2 max-h-48 overflow-y-auto whitespace-pre-wrap font-mono text-text-tertiary">
+                {result.logs.join('\n')}
+              </pre>
+            </details>
+          ) : null}
         </div>
       ) : null}
     </div>

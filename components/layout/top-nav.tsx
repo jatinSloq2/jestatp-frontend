@@ -8,6 +8,78 @@ import { Logo } from '@/components/brand/logo';
 import { IndexTicker } from '@/components/layout/index-ticker';
 import { User } from '@/lib/api';
 import { useLogout } from '@/lib/queries/useAuth';
+import { useConnectedBrokers } from '@/lib/queries/useBrokers';
+
+const BROKER_LABELS: Record<string, string> = { dhan: 'Dhan', zerodha: 'Zerodha', groww: 'Groww' };
+
+const BROKER_PLAN_LINKS: Record<string, string> = {
+  zerodha: 'https://kite.trade/connect/login',
+  dhan: 'https://dhanhq.co/pricing/',
+  groww: 'https://groww.in/trade-api',
+};
+
+function WarningIcon({ className }: { className?: string }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" className={className}>
+      <path
+        d="M8 1.5L15 14H1L8 1.5Z"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+      <path d="M8 6.2V9.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="8" cy="11.6" r="0.9" fill="currentColor" />
+    </svg>
+  );
+}
+
+/**
+ * Shown when a connected broker has told us (via a failed quote/historical
+ * call — see `recordDataPlanStatus` in the backend's broker.service.ts)
+ * that the user's account isn't subscribed to that broker's live/historical
+ * data plan. Without this, prices/candles silently fail or fall back, which
+ * reads as a bug rather than "you need to buy something from your broker".
+ */
+function DataPlanBanner() {
+  const { connections } = useConnectedBrokers();
+
+  const brokersNeedingPlan = (connections ?? []).filter(
+    (c) => c.status === 'connected' && c.meta?.dataPlanOk === false,
+  );
+
+  if (brokersNeedingPlan.length === 0) return null;
+
+  return (
+    <div className="border-b border-amber-500/30 bg-amber-500/10 px-6 py-2 text-amber-800 dark:text-amber-300">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium lg:px-4">
+        <WarningIcon className="shrink-0" />
+        {brokersNeedingPlan.map((c, i) => {
+          const label = BROKER_LABELS[c.broker] ?? c.broker;
+          const link = BROKER_PLAN_LINKS[c.broker];
+          return (
+            <span key={c.broker} className="flex items-center gap-1">
+              {i > 0 ? <span className="text-amber-800/40 dark:text-amber-300/40">·</span> : null}
+              <span>
+                {label}: your account isn&apos;t subscribed to the live data plan — prices shown may be delayed or
+                unavailable.
+              </span>
+              {link ? (
+                <a
+                  href={link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-200"
+                >
+                  Purchase the {label} data plan
+                </a>
+              ) : null}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 interface NavItem {
   label: string;
@@ -171,6 +243,8 @@ export function TopNav({ user }: { user: User | null }) {
           </button>
         </div>
       </div>
+
+      <DataPlanBanner />
 
       <div className="hidden border-t border-border px-6 py-2 lg:block lg:px-10">
         <IndexTicker compact className="mx-auto max-w-7xl" />

@@ -73,6 +73,12 @@ export type StrategyStatus = (typeof STRATEGY_STATUSES)[number];
 export const EXECUTION_MODES = ['paper', 'live'] as const;
 export type ExecutionMode = (typeof EXECUTION_MODES)[number];
 
+export const STRATEGY_LANGUAGES = ['dsl', 'python'] as const;
+export type StrategyLanguage = (typeof STRATEGY_LANGUAGES)[number];
+
+export const BROKERS = ['dhan', 'zerodha', 'groww'] as const;
+export type BrokerName = (typeof BROKERS)[number];
+
 export const SEGMENTS = ['equity', 'fno', 'currency', 'commodity'] as const;
 export type Segment = (typeof SEGMENTS)[number];
 
@@ -234,9 +240,14 @@ export interface StrategyInput {
   exchange: string;
   segment?: Segment;
   timeframe: Timeframe;
+  broker: BrokerName;
   executionMode?: ExecutionMode;
-  entry: ConditionBlock;
-  exit: ConditionBlock;
+  language?: StrategyLanguage;
+  // DSL strategies: both required. Python strategies: pythonCode required instead — see the
+  // language toggle in strategy-form.tsx and assertLanguagePayload on the backend.
+  entry?: ConditionBlock;
+  exit?: ConditionBlock;
+  pythonCode?: string;
   risk: RiskConfig;
   changeNote?: string;
 }
@@ -250,11 +261,14 @@ export interface Strategy {
   exchange: string;
   segment: Segment;
   timeframe: Timeframe;
+  broker: BrokerName;
   status: StrategyStatus;
   executionMode: ExecutionMode;
   currentVersion: number;
-  entryConditions: ConditionBlock;
-  exitConditions: ConditionBlock;
+  language: StrategyLanguage;
+  entryConditions: ConditionBlock | null;
+  exitConditions: ConditionBlock | null;
+  pythonCode: string | null;
   riskConfig: RiskConfig;
   lastValidatedAt: string | null;
   createdAt: string;
@@ -266,8 +280,10 @@ export interface StrategyVersion {
   strategyId: string;
   version: number;
   name: string;
-  entryConditions: ConditionBlock;
-  exitConditions: ConditionBlock;
+  language: StrategyLanguage;
+  entryConditions: ConditionBlock | null;
+  exitConditions: ConditionBlock | null;
+  pythonCode: string | null;
   riskConfig: RiskConfig;
   changeNote: string | null;
   createdBy: string | null;

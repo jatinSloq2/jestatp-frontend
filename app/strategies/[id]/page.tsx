@@ -164,6 +164,8 @@ export default function StrategyDetailPage() {
                 ['Exchange', strategy.exchange],
                 ['Segment', strategy.segment],
                 ['Timeframe', strategy.timeframe],
+                ['Broker', strategy.broker],
+                ['Language', strategy.language === 'python' ? 'Python' : 'Builder (no-code)'],
                 ['Execution mode', strategy.executionMode],
                 ['Current version', `v${strategy.currentVersion}`],
                 ['Last validated', strategy.lastValidatedAt ? new Date(strategy.lastValidatedAt).toLocaleString() : 'Never'],
@@ -205,13 +207,23 @@ export default function StrategyDetailPage() {
           </Card>
         </div>
 
-        <Card title="Entry conditions">
-          <JsonBlock value={strategy.entryConditions} />
-        </Card>
+        {strategy.language === 'python' ? (
+          <Card title="Strategy code (Python)">
+            <pre className="max-h-96 overflow-auto rounded border border-border-strong bg-surface-sunken p-3 font-mono text-xs text-text-secondary">
+              {strategy.pythonCode}
+            </pre>
+          </Card>
+        ) : (
+          <>
+            <Card title="Entry conditions">
+              <JsonBlock value={strategy.entryConditions} />
+            </Card>
 
-        <Card title="Exit conditions">
-          <JsonBlock value={strategy.exitConditions} />
-        </Card>
+            <Card title="Exit conditions">
+              <JsonBlock value={strategy.exitConditions} />
+            </Card>
+          </>
+        )}
 
         <Card title="Backtest">
           <StrategyBacktestSection strategyId={strategy.id} />
@@ -244,7 +256,13 @@ export default function StrategyDetailPage() {
                   </button>
                   {expandedVersion === v.version ? (
                     <div className="mt-3 flex flex-col gap-3">
-                      <JsonBlock value={{ entry: v.entryConditions, exit: v.exitConditions, risk: v.riskConfig }} />
+                      {v.language === 'python' ? (
+                        <pre className="max-h-72 overflow-auto rounded border border-border-strong bg-surface-sunken p-3 font-mono text-xs text-text-secondary">
+                          {v.pythonCode}
+                        </pre>
+                      ) : (
+                        <JsonBlock value={{ entry: v.entryConditions, exit: v.exitConditions, risk: v.riskConfig }} />
+                      )}
                     </div>
                   ) : null}
                 </div>

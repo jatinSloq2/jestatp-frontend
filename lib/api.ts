@@ -238,6 +238,16 @@ export interface BacktestStats {
   worstTrade: number;
 }
 
+export interface OpenPositionSnapshot {
+  entryIndex: number;
+  entryTimestamp: number;
+  entryPrice: number;
+  quantity: number;
+  stopLossPrice: number;
+  targetPrice: number;
+  trailingStopPrice: number | null;
+}
+
 export interface BacktestResult {
   strategyId: string;
   broker: BrokerName;
@@ -250,6 +260,11 @@ export interface BacktestResult {
   trades: BacktestTrade[];
   equityCurve: EquityPoint[];
   stats: BacktestStats;
+  // Always null for a backtest (the engine force-closes on the last bar) —
+  // present on the shared type because the live engine's runtime reuses it.
+  openPosition: OpenPositionSnapshot | null;
+  // Python strategies only: whatever the script passed to ctx.log(...).
+  logs?: string[];
 }
 
 /** The pagination meta these two endpoints return, plus the broker connection's lastSyncedAt. */
@@ -384,14 +399,16 @@ export const api = {
   getStrategyVersion: (id: string, version: number) =>
     request<StrategyVersion>(`/strategies/${id}/versions/${version}`),
 
-  runBacktest: (id: string, input: { broker: BrokerName; from?: string; to?: string }) =>
+  runBacktest: (id: string, input: { broker?: BrokerName; from?: string; to?: string; params?: Record<string, unknown>; warmup?: number }) =>
     request<BacktestResult>(`/strategies/${id}/backtest`, { method: 'POST', body: JSON.stringify(input) }),
 
   previewBacktest: (
-    input: Pick<StrategyInput, 'instrument' | 'exchange' | 'segment' | 'timeframe' | 'entry' | 'exit' | 'risk'> & {
+    input: Pick<StrategyInput, 'instrument' | 'exchange' | 'segment' | 'timeframe' | 'language' | 'entry' | 'exit' | 'pythonCode' | 'risk'> & {
       broker: BrokerName;
       from?: string;
       to?: string;
+      params?: Record<string, unknown>;
+      warmup?: number;
     },
   ) => request<BacktestResult>('/strategies/backtest/preview', { method: 'POST', body: JSON.stringify(input) }),
 

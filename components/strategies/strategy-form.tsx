@@ -8,9 +8,11 @@ import { Select } from '@/components/ui/select';
 import { ConditionBlockEditor } from './condition-editor';
 import { RiskConfigForm } from './risk-config-form';
 import { StrategyBacktestPanel } from './strategy-backtest-panel';
-import { ApiError, IndicatorCatalog, Segment, StrategyInput, ValidationResult } from '@/lib/api';
+import { PythonStrategyEditor, DEFAULT_STRATEGY_TEMPLATE } from './python-editor';
+import { ApiError, IndicatorCatalog, Segment, StrategyInput, StrategyLanguage, ValidationResult } from '@/lib/api';
 import { EXCHANGES_BY_SEGMENT, instrumentsForSegment } from '@/lib/instruments';
 import { useValidateStrategy } from '@/lib/queries/useStrategies';
+import { BrokerSelect, useConnectedBrokers } from '@/components/trading/broker-picker';
 
 const SEGMENT_OPTIONS: { value: Segment; label: string }[] = [
   { value: 'equity', label: 'Equity — cash market' },
@@ -39,9 +41,25 @@ export function StrategyForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const validateMutation = useValidateStrategy();
+  const { connections, connectedBrokers, loading: brokersLoading } = useConnectedBrokers();
+  const language: StrategyLanguage = input.language ?? 'dsl';
 
   function set<K extends keyof StrategyInput>(key: K, value: StrategyInput[K]) {
     setInput((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function setLanguage(next: StrategyLanguage) {
+    // Switching language starts that side's payload fresh rather than
+    // carrying over the other language's fields — mirrors the backend's
+    // assertLanguagePayload, which rejects entry/exit alongside pythonCode.
+    setInput((prev) => ({
+      ...prev,
+      language: next,
+      entry: next === 'python' ? undefined : prev.entry ?? { conditions: [], logic: 'AND' },
+      exit: next === 'python' ? undefined : prev.exit ?? { conditions: [], logic: 'AND' },
+      pythonCode: next === 'python' ? prev.pythonCode ?? DEFAULT_STRATEGY_TEMPLATE : undefined,
+    }));
+    setValidation(null);
   }
 
   async function handleValidate() {
@@ -143,7 +161,10 @@ export function StrategyForm({
               allowCustomValue={false}
             />
           </div>
-          <div className="sm:w-64">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:w-fit">
+            {connections ? (
+              <BrokerSelect connections={connectedBrokers} value={input.broker ?? null} onChange={(b) => set('broker', b)} />
+            ) : null}
             <Select
               label="Execution mode"
               value={input.executionMode ?? 'paper'}
@@ -156,16 +177,63 @@ export function StrategyForm({
               allowCustomValue={false}
             />
           </div>
+          {!brokersLoading && connectedBrokers.length === 0 ? (
+            <Banner tone="warning">Connect a broker before saving — a strategy needs to know which account to trade through.</Banner>
+          ) : null}
         </section>
 
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">Entry conditions</h2>
-          <ConditionBlockEditor block={input.entry} onChange={(entry) => set('entry', entry)} catalog={catalog} />
-        </section>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">Strategy logic</h2>
+            <div className="flex overflow-hidden rounded border border-border-strong text-sm">
+              {(['dsl', 'python'] as StrategyLanguage[]).map((lang) => (
+                <button
+                  key={lang}
+                  type="button"
+                  onClick={() => setLanguage(lang)}
+                  className={
+                    language === lang
+                      ? 'bg-accent-trust px-3 py-1.5 font-medium text-white'
+                      : 'bg-surface-raised px-3 py-1.5 text-text-secondary hover:bg-surface-sunken'
+                  }
+                >
+                  {lang === 'dsl' ? 'Builder (no-code)' : 'Python'}
+                </button>
+              ))}
+            </div>
+          </div>
 
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">Exit conditions</h2>
-          <ConditionBlockEditor block={input.exit} onChange={(exit) => set('exit', exit)} catalog={catalog} />
+          {language === 'python' ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-text-tertiary">
+                Write an <code className="rounded bg-surface-sunken px-1 py-0.5 font-mono text-xs">on_bar(ctx)</code> function that
+                returns <code className="rounded bg-surface-sunken px-1 py-0.5 font-mono text-xs">Signal.buy()</code>,{' '}
+                <code className="rounded bg-surface-sunken px-1 py-0.5 font-mono text-xs">Signal.exit()</code>, or{' '}
+                <code className="rounded bg-surface-sunken px-1 py-0.5 font-mono text-xs">None</code>. Runs in an isolated sandbox — no
+                filesystem or network access.
+              </p>
+              <PythonStrategyEditor value={input.pythonCode ?? DEFAULT_STRATEGY_TEMPLATE} onChange={(code) => set('pythonCode', code)} />
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col gap-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">Entry conditions</h3>
+                <ConditionBlockEditor
+                  block={input.entry ?? { conditions: [], logic: 'AND' }}
+                  onChange={(entry) => set('entry', entry)}
+                  catalog={catalog}
+                />
+              </div>
+              <div className="flex flex-col gap-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">Exit conditions</h3>
+                <ConditionBlockEditor
+                  block={input.exit ?? { conditions: [], logic: 'AND' }}
+                  onChange={(exit) => set('exit', exit)}
+                  catalog={catalog}
+                />
+              </div>
+            </>
+          )}
         </section>
 
         <section className="flex flex-col gap-3">
@@ -175,8 +243,10 @@ export function StrategyForm({
             exchange={input.exchange}
             segment={input.segment ?? 'equity'}
             timeframe={input.timeframe}
+            language={language}
             entry={input.entry}
             exit={input.exit}
+            pythonCode={input.pythonCode}
             risk={input.risk}
           />
         </section>

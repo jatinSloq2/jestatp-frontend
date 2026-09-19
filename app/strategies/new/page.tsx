@@ -16,7 +16,9 @@ const DEFAULT_INPUT: StrategyInput = {
   exchange: '',
   segment: 'equity',
   timeframe: '5m',
+  broker: 'zerodha',
   executionMode: 'paper',
+  language: 'dsl',
   entry: { conditions: [], logic: 'AND' },
   exit: { conditions: [], logic: 'AND' },
   risk: {

@@ -58,9 +58,12 @@ export default function EditStrategyPage() {
               exchange: strategy.exchange,
               segment: strategy.segment,
               timeframe: strategy.timeframe,
+              broker: strategy.broker,
               executionMode: strategy.executionMode,
-              entry: strategy.entryConditions,
-              exit: strategy.exitConditions,
+              language: strategy.language,
+              entry: strategy.entryConditions ?? undefined,
+              exit: strategy.exitConditions ?? undefined,
+              pythonCode: strategy.pythonCode ?? undefined,
               risk: strategy.riskConfig,
             }}
             catalog={catalog}

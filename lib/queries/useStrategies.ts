@@ -112,7 +112,8 @@ export function useDuplicateStrategy() {
 
 export function useRunBacktest(id: string) {
   return useMutation({
-    mutationFn: (input: { broker: BrokerName; from?: string; to?: string }) => api.runBacktest(id, input),
+    mutationFn: (input: { broker?: BrokerName; from?: string; to?: string; params?: Record<string, unknown>; warmup?: number }) =>
+      api.runBacktest(id, input),
   });
 }
 

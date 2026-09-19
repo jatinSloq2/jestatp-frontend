@@ -68,6 +68,16 @@ export function StrategyBacktestSection({ strategyId }: { strategyId: string }) 
           <p className="text-xs text-text-tertiary">
             {new Date(result.from).toLocaleDateString()} – {new Date(result.to).toLocaleDateString()} via {result.broker}
           </p>
+          {result.logs && result.logs.length > 0 ? (
+            <details className="rounded border border-border-strong bg-surface-raised p-3 text-xs">
+              <summary className="cursor-pointer select-none font-medium text-text-secondary">
+                Strategy logs ({result.logs.length})
+              </summary>
+              <pre className="mt-2 max-h-48 overflow-y-auto whitespace-pre-wrap font-mono text-text-tertiary">
+                {result.logs.join('\n')}
+              </pre>
+            </details>
+          ) : null}
         </div>
       ) : null}
     </div>
