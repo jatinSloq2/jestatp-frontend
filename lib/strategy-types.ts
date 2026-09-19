@@ -241,6 +241,7 @@ export interface StrategyInput {
   segment?: Segment;
   timeframe: Timeframe;
   broker: BrokerName;
+  productType?: 'CNC' | 'MIS' | 'NRML';
   executionMode?: ExecutionMode;
   language?: StrategyLanguage;
   // DSL strategies: both required. Python strategies: pythonCode required instead — see the
@@ -262,6 +263,7 @@ export interface Strategy {
   segment: Segment;
   timeframe: Timeframe;
   broker: BrokerName;
+  productType: 'CNC' | 'MIS' | 'NRML';
   status: StrategyStatus;
   executionMode: ExecutionMode;
   currentVersion: number;

@@ -176,6 +176,19 @@ export function StrategyForm({
               searchable={false}
               allowCustomValue={false}
             />
+            <Select
+              label="Product type"
+              value={input.productType ?? 'MIS'}
+              onChange={(v) => set('productType', v as any)}
+              options={[
+                { value: 'MIS', label: 'MIS (intraday)' },
+                { value: 'CNC', label: 'CNC (delivery)' },
+                { value: 'NRML', label: 'NRML (F&O carry-forward)' },
+              ]}
+              searchable={false}
+              allowCustomValue={false}
+              hint="Live/paper orders always use MARKET orders with this product type."
+            />
           </div>
           {!brokersLoading && connectedBrokers.length === 0 ? (
             <Banner tone="warning">Connect a broker before saving — a strategy needs to know which account to trade through.</Banner>

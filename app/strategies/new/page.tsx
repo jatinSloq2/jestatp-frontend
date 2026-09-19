@@ -17,6 +17,7 @@ const DEFAULT_INPUT: StrategyInput = {
   segment: 'equity',
   timeframe: '5m',
   broker: 'zerodha',
+  productType: 'MIS',
   executionMode: 'paper',
   language: 'dsl',
   entry: { conditions: [], logic: 'AND' },

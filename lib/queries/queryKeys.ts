@@ -42,4 +42,9 @@ export const queryKeys = {
     activity: (id: string, params?: { page?: number; limit?: number }) =>
       ['strategies', 'detail', id, 'activity', params?.page ?? 1, params?.limit ?? 'default'] as const,
   },
+  alerts: {
+    all: () => ['alerts'] as const,
+    list: (params?: { unacknowledged?: boolean; page?: number; limit?: number }) =>
+      ['alerts', params?.unacknowledged ?? false, params?.page ?? 1, params?.limit ?? 'default'] as const,
+  },
 };

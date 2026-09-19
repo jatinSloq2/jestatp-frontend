@@ -331,6 +331,25 @@ export interface StrategyActivity {
   };
 }
 
+/** Something the live trading engine raised that a human should see — see alerting.service.ts. */
+export interface AlertRecord {
+  id: string;
+  userId: string;
+  strategyId: string | null;
+  severity: 'info' | 'warning' | 'critical';
+  type: string;
+  message: string;
+  metadata: Record<string, unknown> | null;
+  acknowledgedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AlertsPaginationMeta extends PaginationMeta {
+  unacknowledgedCount: number;
+}
+
+
 /** The pagination meta these two endpoints return, plus the broker connection's lastSyncedAt. */
 export interface SyncedPaginationMeta {
   page: number;
@@ -518,4 +537,16 @@ export const api = {
 
   resetPassword: (input: { token: string; password: string }) =>
     request('/auth/reset-password', { method: 'POST', body: JSON.stringify(input) }),
+
+  // ─── Alerts ────────────
+  listAlerts: (params?: { unacknowledged?: boolean; page?: number; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.unacknowledged) qs.set('unacknowledged', 'true');
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    return requestWithMeta<AlertRecord[], AlertsPaginationMeta>(`/alerts${suffix}`);
+  },
+
+  acknowledgeAlert: (id: string) => request<AlertRecord>(`/alerts/${id}/acknowledge`, { method: 'POST' }),
 };

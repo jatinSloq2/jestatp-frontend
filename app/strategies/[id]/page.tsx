@@ -169,6 +169,7 @@ export default function StrategyDetailPage() {
                 ['Segment', strategy.segment],
                 ['Timeframe', strategy.timeframe],
                 ['Broker', strategy.broker],
+                ['Product type', strategy.productType],
                 ['Language', strategy.language === 'python' ? 'Python' : 'Builder (no-code)'],
                 ['Execution mode', strategy.executionMode],
                 ['Current version', `v${strategy.currentVersion}`],

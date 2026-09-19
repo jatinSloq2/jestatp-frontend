@@ -59,6 +59,7 @@ export default function EditStrategyPage() {
               segment: strategy.segment,
               timeframe: strategy.timeframe,
               broker: strategy.broker,
+              productType: strategy.productType,
               executionMode: strategy.executionMode,
               language: strategy.language,
               entry: strategy.entryConditions ?? undefined,

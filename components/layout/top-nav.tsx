@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
 import { Logo } from '@/components/brand/logo';
 import { IndexTicker } from '@/components/layout/index-ticker';
+import { AlertsBell } from '@/components/layout/alerts-bell';
 import { User } from '@/lib/api';
 import { useLogout } from '@/lib/queries/useAuth';
 import { useConnectedBrokers } from '@/lib/queries/useBrokers';
@@ -191,6 +192,7 @@ export function TopNav({ user }: { user: User | null }) {
         </div>
 
         <div className="flex items-center gap-2">
+          <AlertsBell />
           <div className="relative hidden sm:block" ref={menuRef}>
             <button
               type="button"
