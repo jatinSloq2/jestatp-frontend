@@ -48,6 +48,39 @@ export function useCurrentUser() {
   };
 }
 
+/**
+ * Same `/auth/me` fetch as `useCurrentUser`, but for pages that are public
+ * either way (legal pages, trust & safety, bug bounty) — a logged-out
+ * visitor is a perfectly normal case there, so this never redirects to
+ * /login on a 401. Used to decide whether to show the full app `TopNav`
+ * (logged in) or the plain marketing header with Log in / Sign up
+ * (logged out), while the visitor keeps reading the page either way.
+ */
+export function useOptionalCurrentUser() {
+  const dispatch = useAppDispatch();
+
+  const query = useQuery<User, ApiError>({
+    queryKey: queryKeys.auth.me(),
+    queryFn: api.me,
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (query.data) dispatch(setCurrentUser(query.data));
+  }, [query.data, dispatch]);
+
+  useEffect(() => {
+    if (query.error instanceof ApiError && query.error.status === 401) {
+      dispatch(clearCurrentUser());
+    }
+  }, [query.error, dispatch]);
+
+  return {
+    user: query.data ?? null,
+    loading: query.isLoading,
+  };
+}
+
 /** Clears both the React Query cache and the Redux auth slice, then redirects to /login. */
 export function useLogout() {
   const router = useRouter();
