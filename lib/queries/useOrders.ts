@@ -1,5 +1,5 @@
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, ApiError, BrokerName, OrderRecord, OrderSegment, SyncedPaginationMeta } from '@/lib/api';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { api, ApiError, BrokerName, OrderRecord, OrderSegment, PlaceOrderInput, SyncedPaginationMeta } from '@/lib/api';
 import { queryKeys } from './queryKeys';
 import { useSyncBroker } from './useBrokers';
 
@@ -43,4 +43,15 @@ export function useSyncAndRefetch(queryKeyToInvalidate: readonly unknown[]) {
   };
 
   return { sync, syncing: syncMutation.isPending };
+}
+
+/** Places a real order. Invalidates the orders list on success so the new (or rejected) order shows up without a manual refresh. */
+export function usePlaceOrder() {
+  const queryClient = useQueryClient();
+  return useMutation<OrderRecord, ApiError, PlaceOrderInput>({
+    mutationFn: (input) => api.placeOrder(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all() });
+    },
+  });
 }

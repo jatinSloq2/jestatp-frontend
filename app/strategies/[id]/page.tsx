@@ -11,11 +11,13 @@ import { StrategyStatusBadge } from '@/components/ui/status-badge';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useConfirmDialog } from '@/components/ui/confirm-dialog';
 import { StrategyBacktestSection } from '@/components/strategies/strategy-backtest-section';
+import { LiveActivityPanel } from '@/components/strategies/live-activity-panel';
 import { useUser } from '@/lib/useUser';
 import { ApiError } from '@/lib/api';
 import {
   useStrategy,
   useStrategyVersions,
+  useStrategyActivity,
   useActivateStrategy,
   usePauseStrategy,
   useDuplicateStrategy,
@@ -43,6 +45,8 @@ export default function StrategyDetailPage() {
   const versionsQuery = useStrategyVersions(params.id);
   const strategy = strategyQuery.data ?? null;
   const versions = versionsQuery.data ?? null;
+  const activityQuery = useStrategyActivity(params.id, undefined, strategy?.status === 'active');
+  const activity = activityQuery.data ?? null;
 
   const activateMutation = useActivateStrategy();
   const pauseMutation = usePauseStrategy();
@@ -177,6 +181,16 @@ export default function StrategyDetailPage() {
               ))}
             </dl>
           </Card>
+
+          {strategy.status === 'active' || strategy.status === 'paused' ? (
+            <Card title="Live activity">
+              {activity ? (
+                <LiveActivityPanel activity={activity} />
+              ) : (
+                <p className="text-sm text-text-secondary">Loading…</p>
+              )}
+            </Card>
+          ) : null}
 
           <Card title="Risk">
             <dl className="flex flex-col gap-2 text-sm">

@@ -6,6 +6,7 @@ import {
   PaginationMeta,
   Segment,
   Strategy,
+  StrategyActivity,
   StrategyInput,
   StrategyStatus,
   StrategyVersion,
@@ -48,6 +49,21 @@ export function useStrategyVersion(id: string | null, version: number | null) {
     queryKey: queryKeys.strategies.version(id as string, version as number),
     queryFn: () => api.getStrategyVersion(id as string, version as number),
     enabled: id !== null && version !== null,
+  });
+}
+
+/**
+ * Current live/paper execution status for this strategy — polls every 15s
+ * while the strategy is active (matches roughly how often a fresh tick can
+ * realistically produce a new trade) so the "are we holding a position
+ * right now" panel doesn't require a manual refresh.
+ */
+export function useStrategyActivity(id: string | null, params?: { page?: number; limit?: number }, isActive?: boolean) {
+  return useQuery<StrategyActivity, ApiError>({
+    queryKey: queryKeys.strategies.activity(id as string, params),
+    queryFn: () => api.getStrategyActivity(id as string, params),
+    enabled: id !== null,
+    refetchInterval: isActive ? 15_000 : false,
   });
 }
 

@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Banner } from '@/components/ui/banner';
 import { BrokerSelect, useConnectedBrokers } from '@/components/trading/broker-picker';
+import { PlaceOrderForm } from '@/components/trading/place-order-form';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useUser } from '@/lib/useUser';
 import { OrderRecord, OrderSegment } from '@/lib/api';
@@ -33,6 +34,7 @@ export default function OrdersPage() {
 
   const [segment, setSegment] = useState<OrderSegment | 'all'>('all');
   const [page, setPage] = useState(1);
+  const [placingOrder, setPlacingOrder] = useState(false);
 
   const { data, isLoading, isFetching, error } = useOrders({ broker, segment, page });
   const { sync, syncing } = useSyncAndRefetch(queryKeys.orders.list({ broker: broker!, segment, page }));
@@ -98,8 +100,18 @@ export default function OrdersPage() {
                 <Button type="button" variant="secondary" size="md" loading={syncing} onClick={() => broker && sync(broker)}>
                   Sync now
                 </Button>
+                <Button type="button" size="md" onClick={() => setPlacingOrder((v) => !v)}>
+                  {placingOrder ? 'Cancel' : 'Place order'}
+                </Button>
               </div>
             </div>
+
+            {placingOrder && broker ? (
+              <Card>
+                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-text-tertiary">Place order — {broker}</h2>
+                <PlaceOrderForm broker={broker} onPlaced={() => setPlacingOrder(false)} />
+              </Card>
+            ) : null}
 
             <Card className="overflow-x-auto">
               {isLoading || !orders ? (

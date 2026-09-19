@@ -17,6 +17,7 @@ export const queryKeys = {
     connections: () => ['brokers', 'connections'] as const,
   },
   orders: {
+    all: () => ['orders'] as const,
     list: (params: { broker: BrokerName; segment?: OrderSegment | 'all'; page: number; limit?: number }) =>
       ['orders', params.broker, params.segment ?? 'all', params.page, params.limit ?? 'default'] as const,
   },
@@ -38,5 +39,7 @@ export const queryKeys = {
     detail: (id: string) => ['strategies', 'detail', id] as const,
     versions: (id: string) => ['strategies', 'detail', id, 'versions'] as const,
     version: (id: string, version: number) => ['strategies', 'detail', id, 'versions', version] as const,
+    activity: (id: string, params?: { page?: number; limit?: number }) =>
+      ['strategies', 'detail', id, 'activity', params?.page ?? 1, params?.limit ?? 'default'] as const,
   },
 };

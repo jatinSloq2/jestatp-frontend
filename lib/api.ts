@@ -1,6 +1,7 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api/v1';
 
 import {
+  ExecutionMode,
   IndicatorCatalog,
   PaginationMeta,
   Strategy,
@@ -159,6 +160,20 @@ export interface OrderRecord {
   placedAt: string | null;
 }
 
+/** Payload for POST /orders — see order.routes.ts's Joi schema for the price/triggerPrice-required-per-orderType rules. */
+export interface PlaceOrderInput {
+  broker: BrokerName;
+  segment: OrderSegment;
+  tradingSymbol: string;
+  exchange: string;
+  side: 'BUY' | 'SELL';
+  orderType: 'MARKET' | 'LIMIT' | 'SL' | 'SL-M';
+  productType: 'CNC' | 'MIS' | 'NRML';
+  quantity: number;
+  price?: number;
+  triggerPrice?: number;
+}
+
 export interface PositionRecord {
   id: string;
   broker: BrokerName;
@@ -265,6 +280,55 @@ export interface BacktestResult {
   openPosition: OpenPositionSnapshot | null;
   // Python strategies only: whatever the script passed to ctx.log(...).
   logs?: string[];
+}
+
+/** The engine's persisted "what am I doing right now" snapshot — see liveEngine.ts / StrategyRuntimeState. */
+export interface PersistedOpenPosition extends OpenPositionSnapshot {
+  tradeId: string;
+  entryOrderId: string | null;
+}
+
+export interface StrategyTradeRecord {
+  id: string;
+  strategyId: string;
+  mode: 'paper' | 'live';
+  entryTimestamp: number;
+  entryPrice: number;
+  exitTimestamp: number | null;
+  exitPrice: number | null;
+  quantity: number;
+  exitReason: BacktestTrade['exitReason'] | null;
+  pnl: number | null;
+  entryOrderId: string | null;
+  exitOrderId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StrategyActivity {
+  status: StrategyStatus;
+  executionMode: ExecutionMode;
+  broker: BrokerName;
+  runtime: {
+    lastProcessedBarTimestamp: number | null;
+    openPosition: PersistedOpenPosition | null;
+    tradesToday: number;
+    lossToday: number;
+  } | null;
+  summary: {
+    closedTrades: number;
+    openPosition: number;
+    winningTrades: number;
+    losingTrades: number;
+    winRatePercent: number;
+    totalPnl: number;
+    bestTrade: number;
+    worstTrade: number;
+  };
+  trades: {
+    rows: StrategyTradeRecord[];
+    meta: PaginationMeta;
+  };
 }
 
 /** The pagination meta these two endpoints return, plus the broker connection's lastSyncedAt. */
@@ -396,6 +460,14 @@ export const api = {
 
   listStrategyVersions: (id: string) => request<StrategyVersion[]>(`/strategies/${id}/versions`),
 
+  getStrategyActivity: (id: string, params?: { page?: number; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    return request<StrategyActivity>(`/strategies/${id}/activity${suffix}`);
+  },
+
   getStrategyVersion: (id: string, version: number) =>
     request<StrategyVersion>(`/strategies/${id}/versions/${version}`),
 
@@ -420,6 +492,9 @@ export const api = {
     if (params.limit) qs.set('limit', String(params.limit));
     return requestWithMeta<OrderRecord[], SyncedPaginationMeta>(`/orders?${qs.toString()}`);
   },
+
+  /** Places a real order with the broker — see order.routes.ts's POST /orders for validation rules (price/triggerPrice required depending on orderType). */
+  placeOrder: (input: PlaceOrderInput) => request<OrderRecord>('/orders', { method: 'POST', body: JSON.stringify(input) }),
 
   listPositions: (params: { broker: BrokerName; segment?: OrderSegment; page?: number; limit?: number }) => {
     const qs = new URLSearchParams({ broker: params.broker });
