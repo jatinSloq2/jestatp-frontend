@@ -116,6 +116,16 @@ export interface SupportedBroker {
   authType: 'token' | 'oauth';
 }
 
+export interface Quote {
+  tradingSymbol: string;
+  ltp: number;
+  open?: number;
+  high?: number;
+  low?: number;
+  close?: number;
+  volume?: number;
+}
+
 export interface BrokerConnection {
   id: string;
   userId: string;
@@ -531,6 +541,13 @@ export const api = {
   },
 
   getFunds: (broker: BrokerName) => request<FundRecord>(`/funds?broker=${broker}`),
+
+  /** One-off LTP/OHLC lookup — see broker.routes.ts's GET /brokers/:broker/quote. Throws (ApiError) on no connection, session expired, or missing data plan — callers fetching multiple symbols should catch per-symbol rather than let one bad quote break the rest. */
+  getQuote: (broker: BrokerName, symbol: string, exchange?: string) => {
+    const qs = new URLSearchParams({ symbol });
+    if (exchange) qs.set('exchange', exchange);
+    return request<Quote>(`/brokers/${broker}/quote?${qs.toString()}`);
+  },
 
   forgotPassword: (input: { email: string }) =>
     request('/auth/forgot-password', { method: 'POST', body: JSON.stringify(input) }),

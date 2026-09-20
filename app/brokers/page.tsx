@@ -130,6 +130,7 @@ export default function BrokersPage() {
                         {supported!.map((broker) => {
                             const connection = connectionFor(broker.broker);
                             const isConnected = connection?.status === 'connected';
+                            const isExpired = connection?.status === 'expired';
                             const busy = busyBroker === broker.broker;
 
                             return (
@@ -149,6 +150,16 @@ export default function BrokersPage() {
                                             {broker.authType === 'oauth' ? 'Connect via secure login redirect' : 'Connect using an API token'}
                                         </p>
 
+                                        {isExpired ? (
+                                            <div className="mt-3 rounded border border-risk-warning/40 bg-risk-warning/10 px-3 py-2 text-xs text-risk-warning">
+                                                Your session expired
+                                                {connection?.tokenExpiresAt
+                                                    ? ` at ${new Date(connection.tokenExpiresAt).toLocaleString()}`
+                                                    : ''}
+                                                . {broker.name} sessions don&apos;t last forever — reconnect to keep trading.
+                                            </div>
+                                        ) : null}
+
                                         {connection ? (
                                             <dl className="mt-4 flex flex-col gap-1.5 text-sm">
                                                 {connection.clientId ? (
@@ -163,6 +174,14 @@ export default function BrokersPage() {
                                                         {connection.lastSyncedAt ? new Date(connection.lastSyncedAt).toLocaleString() : 'Never'}
                                                     </dd>
                                                 </div>
+                                                {isConnected && connection.tokenExpiresAt ? (
+                                                    <div className="flex items-center justify-between">
+                                                        <dt className="text-text-tertiary">Session expires</dt>
+                                                        <dd className="text-text-secondary">
+                                                            {new Date(connection.tokenExpiresAt).toLocaleString()}
+                                                        </dd>
+                                                    </div>
+                                                ) : null}
                                             </dl>
                                         ) : null}
                                     </div>
@@ -193,7 +212,7 @@ export default function BrokersPage() {
                                         ) : (
                                             <Link href={connectHrefByBroker[broker.broker]} className="flex-1">
                                                 <Button type="button" size="md" className="w-full">
-                                                    Connect
+                                                    {isExpired ? 'Reconnect' : 'Connect'}
                                                 </Button>
                                             </Link>
                                         )}

@@ -82,6 +82,47 @@ function DataPlanBanner() {
   );
 }
 
+/**
+ * Shown when a connection's session has actually expired (status 'expired'
+ * — set either proactively, on the regular broker-sync schedule once
+ * tokenExpiresAt passes, or reactively the moment the broker itself
+ * rejects a call as unauthorized — see markSessionExpired in
+ * broker.service.ts). Distinct from DataPlanBanner above: this means
+ * NOTHING works for that broker right now, including live trading, not
+ * just live pricing — so it's styled as more urgent (red, not amber) and
+ * links straight to reconnecting rather than a broker's own website.
+ */
+function SessionExpiredBanner() {
+  const { connections } = useConnectedBrokers();
+
+  const expiredBrokers = (connections ?? []).filter((c) => c.status === 'expired');
+
+  if (expiredBrokers.length === 0) return null;
+
+  return (
+    <div className="border-b border-risk-critical/30 bg-risk-critical/10 px-6 py-2 text-pnl-negative">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium lg:px-4">
+        <WarningIcon className="shrink-0" />
+        {expiredBrokers.map((c, i) => {
+          const label = BROKER_LABELS[c.broker] ?? c.broker;
+          return (
+            <span key={c.broker} className="flex items-center gap-1">
+              {i > 0 ? <span className="opacity-40">·</span> : null}
+              <span>
+                Your {label} session has expired — live trading and pricing through {label} are paused until you
+                reconnect.
+              </span>
+              <Link href="/brokers" className="font-semibold underline underline-offset-2 hover:opacity-80">
+                Reconnect {label}
+              </Link>
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 interface NavItem {
   label: string;
   href: string;
@@ -246,6 +287,7 @@ export function TopNav({ user }: { user: User | null }) {
         </div>
       </div>
 
+      <SessionExpiredBanner />
       <DataPlanBanner />
 
       <div className="hidden border-t border-border px-6 py-2 lg:block lg:px-10">
