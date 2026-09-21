@@ -134,6 +134,7 @@ const primaryNav: NavItem[] = [
   { label: 'Orders', href: '/orders' },
   { label: 'Positions', href: '/positions' },
   { label: 'Holdings', href: '/holdings' },
+  { label: 'Options', href: '/options-chain' },
   { label: 'Funds', href: '/funds' },
   { label: 'Strategies', href: '/strategies' },
 ];

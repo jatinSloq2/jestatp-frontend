@@ -220,6 +220,77 @@ export interface FundRecord {
   syncedAt: string;
 }
 
+// ─── Options chain ───────────────────────────
+
+export type IndexUnderlying = 'NIFTY' | 'BANKNIFTY' | 'FINNIFTY' | 'MIDCPNIFTY' | 'SENSEX';
+
+export const INDEX_UNDERLYINGS: IndexUnderlying[] = ['NIFTY', 'BANKNIFTY', 'FINNIFTY', 'MIDCPNIFTY', 'SENSEX'];
+
+export interface OptionLeg {
+  tradingSymbol: string | null;
+  exchange: string;
+  ltp: number;
+  bid: number;
+  ask: number;
+  oi: number;
+  volume: number;
+  iv?: number;
+  lotSize: number | null;
+}
+
+export interface OptionChainStrike {
+  strike: number;
+  call: OptionLeg | null;
+  put: OptionLeg | null;
+}
+
+export interface OptionChain {
+  underlying: string;
+  exchange: string;
+  expiry: string;
+  underlyingLtp: number;
+  strikes: OptionChainStrike[];
+}
+
+// ─── Custom indicators ───────────────────────────
+
+export interface CustomIndicator {
+  id: string;
+  userId: string;
+  name: string;
+  description: string | null;
+  kind: 'python' | 'formula';
+  code: string;
+  params: Record<string, number | string>;
+  lastValidatedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomIndicatorInput {
+  name: string;
+  description?: string | null;
+  code: string;
+  params?: Record<string, number | string>;
+}
+
+export interface CustomIndicatorTestResult {
+  timestamps: number[];
+  series: (number | null)[];
+  usedSyntheticData: boolean;
+  currentValue: number | null;
+  previousValue: number | null;
+  change: number | null;
+}
+
+export const DEFAULT_INDICATOR_TEMPLATE = `def calculate(data, params):
+    # data["open"/"high"/"low"/"close"/"volume"] are parallel lists, one entry per bar.
+    # Building blocks available: sma(values, period), ema(values, period),
+    # rsi(values, period), atr(data, period), crossed_above(fast, slow, index).
+    period = params.get("period", 20)
+    return ema(data["close"], period)
+`;
+
 // ─── Backtesting ───────────────────────────────────────────
 
 export interface Candle {
@@ -229,6 +300,13 @@ export interface Candle {
   low: number;
   close: number;
   volume: number;
+}
+
+export interface ConditionExplanation {
+  description: string;
+  result: boolean;
+  value?: number | null;
+  children?: ConditionExplanation[];
 }
 
 export interface BacktestTrade {
@@ -242,6 +320,8 @@ export interface BacktestTrade {
   pnl: number;
   pnlPercent: number;
   exitReason: 'exit_condition' | 'stop_loss' | 'target' | 'trailing_stop_loss' | 'time_exit' | 'end_of_data';
+  /** DSL strategies only — which conditions fired, and what value each saw, on the bar this trade opened. */
+  entryExplanation?: ConditionExplanation;
 }
 
 export interface EquityPoint {
@@ -261,6 +341,10 @@ export interface BacktestStats {
   averagePnlPerTrade: number;
   bestTrade: number;
   worstTrade: number;
+  /** Annualized, from day-over-day equity returns. Null when there's not enough daily variation to mean anything (e.g. a very short backtest). */
+  sharpeRatio: number | null;
+  /** The strategy's configured starting capital. */
+  startingCapital: number;
 }
 
 export interface OpenPositionSnapshot {
@@ -281,6 +365,7 @@ export interface BacktestResult {
   exchange: string;
   from: string;
   to: string;
+  mode?: 'standard' | 'walk_forward' | 'monte_carlo';
   candles: Candle[];
   trades: BacktestTrade[];
   equityCurve: EquityPoint[];
@@ -290,6 +375,46 @@ export interface BacktestResult {
   openPosition: OpenPositionSnapshot | null;
   // Python strategies only: whatever the script passed to ctx.log(...).
   logs?: string[];
+  // Only present when `mode: 'monte_carlo'` was requested — the base run's stats/trades above are still the real single-pass result.
+  monteCarlo?: MonteCarloResult;
+}
+
+export interface WalkForwardFold {
+  trainFrom: number;
+  trainTo: number;
+  testFrom: number;
+  testTo: number;
+  testResult: Pick<BacktestResult, 'candles' | 'trades' | 'equityCurve' | 'stats' | 'openPosition'>;
+}
+
+export interface WalkForwardResult {
+  strategyId: string;
+  broker: BrokerName;
+  timeframe: string;
+  instrument: string;
+  exchange: string;
+  from: string;
+  to: string;
+  mode: 'walk_forward';
+  walkForward: {
+    folds: WalkForwardFold[];
+    combinedTestStats: BacktestStats;
+  };
+}
+
+export interface Percentiles {
+  p5: number;
+  p25: number;
+  p50: number;
+  p75: number;
+  p95: number;
+}
+
+export interface MonteCarloResult {
+  runs: number;
+  finalEquityPercentiles: Percentiles;
+  maxDrawdownPercentiles: Percentiles;
+  probabilityOfLoss: number;
 }
 
 /** The engine's persisted "what am I doing right now" snapshot — see liveEngine.ts / StrategyRuntimeState. */
@@ -500,8 +625,20 @@ export const api = {
   getStrategyVersion: (id: string, version: number) =>
     request<StrategyVersion>(`/strategies/${id}/versions/${version}`),
 
-  runBacktest: (id: string, input: { broker?: BrokerName; from?: string; to?: string; params?: Record<string, unknown>; warmup?: number }) =>
-    request<BacktestResult>(`/strategies/${id}/backtest`, { method: 'POST', body: JSON.stringify(input) }),
+  runBacktest: (
+    id: string,
+    input: {
+      broker?: BrokerName;
+      from?: string;
+      to?: string;
+      params?: Record<string, unknown>;
+      warmup?: number;
+      mode?: 'standard' | 'walk_forward' | 'monte_carlo';
+      folds?: number;
+      testFraction?: number;
+      runs?: number;
+    },
+  ) => request<BacktestResult | WalkForwardResult>(`/strategies/${id}/backtest`, { method: 'POST', body: JSON.stringify(input) }),
 
   previewBacktest: (
     input: Pick<StrategyInput, 'instrument' | 'exchange' | 'segment' | 'timeframe' | 'language' | 'entry' | 'exit' | 'pythonCode' | 'risk'> & {
@@ -512,6 +649,32 @@ export const api = {
       warmup?: number;
     },
   ) => request<BacktestResult>('/strategies/backtest/preview', { method: 'POST', body: JSON.stringify(input) }),
+
+  // ─── Custom indicators ────────────
+  listCustomIndicators: (params?: { page?: number; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    const query = qs.toString();
+    return requestWithMeta<CustomIndicator[], PaginationMeta>(`/custom-indicators${query ? `?${query}` : ''}`);
+  },
+
+  getCustomIndicator: (id: string) => request<CustomIndicator>(`/custom-indicators/${id}`),
+
+  createCustomIndicator: (input: CustomIndicatorInput) =>
+    request<CustomIndicator>('/custom-indicators', { method: 'POST', body: JSON.stringify(input) }),
+
+  updateCustomIndicator: (id: string, input: Partial<CustomIndicatorInput>) =>
+    request<CustomIndicator>(`/custom-indicators/${id}`, { method: 'PUT', body: JSON.stringify(input) }),
+
+  deleteCustomIndicator: (id: string) => request<{ id: string }>(`/custom-indicators/${id}`, { method: 'DELETE' }),
+
+  testCustomIndicator: (
+    input: {
+      code: string;
+      params?: Record<string, number | string>;
+    } & Partial<{ broker: BrokerName; instrument: string; exchange: string; segment: Segment; timeframe: string; from: string; to: string }>,
+  ) => request<CustomIndicatorTestResult>('/custom-indicators/test', { method: 'POST', body: JSON.stringify(input) }),
 
   // ─── Trading data (orders / positions / funds) ────────────
   listOrders: (params: { broker: BrokerName; segment?: OrderSegment; page?: number; limit?: number }) => {
@@ -547,6 +710,16 @@ export const api = {
     const qs = new URLSearchParams({ symbol });
     if (exchange) qs.set('exchange', exchange);
     return request<Quote>(`/brokers/${broker}/quote?${qs.toString()}`);
+  },
+
+  // ─── Options chain ────────────
+  getOptionChainExpiries: (broker: BrokerName, underlying: IndexUnderlying) =>
+    request<string[]>(`/brokers/${broker}/option-chain/expiries?underlying=${underlying}`),
+
+  getOptionChain: (broker: BrokerName, underlying: IndexUnderlying, expiry?: string) => {
+    const qs = new URLSearchParams({ underlying });
+    if (expiry) qs.set('expiry', expiry);
+    return request<OptionChain>(`/brokers/${broker}/option-chain?${qs.toString()}`);
   },
 
   forgotPassword: (input: { email: string }) =>

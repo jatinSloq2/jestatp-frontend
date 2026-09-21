@@ -59,9 +59,16 @@ export default function StrategiesPage() {
             <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Strategies</h1>
             <p className="mt-1 text-base text-text-secondary">Build, validate, and run automated strategies.</p>
           </div>
-          <Link href="/strategies/new">
-            <Button type="button">New strategy</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/strategies/indicators">
+              <Button type="button" variant="secondary">
+                Custom Indicators
+              </Button>
+            </Link>
+            <Link href="/strategies/new">
+              <Button type="button">New strategy</Button>
+            </Link>
+          </div>
         </div>
 
         <div className="flex items-center justify-between gap-3">

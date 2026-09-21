@@ -29,9 +29,24 @@ const EMPTY: Omit<PlaceOrderInput, 'broker'> = {
  * automated strategy orders). Every submission goes through a confirmation
  * dialog that restates exactly what's about to happen in plain language —
  * this sends real money moving, so there's no "oops" click here.
+ *
+ * `initial` prefills the form (e.g. from an options-chain row); pass
+ * `lockInstrument` alongside it to keep symbol/exchange/segment read-only
+ * so a quick qty/price tweak can't accidentally end up ordering a different
+ * contract than the one the person clicked.
  */
-export function PlaceOrderForm({ broker, onPlaced }: { broker: BrokerName; onPlaced?: () => void }) {
-  const [form, setForm] = useState(EMPTY);
+export function PlaceOrderForm({
+  broker,
+  initial,
+  lockInstrument,
+  onPlaced,
+}: {
+  broker: BrokerName;
+  initial?: Partial<Omit<PlaceOrderInput, 'broker'>>;
+  lockInstrument?: boolean;
+  onPlaced?: () => void;
+}) {
+  const [form, setForm] = useState<Omit<PlaceOrderInput, 'broker'>>({ ...EMPTY, ...initial });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const placeOrderMutation = usePlaceOrder();
@@ -67,7 +82,7 @@ export function PlaceOrderForm({ broker, onPlaced }: { broker: BrokerName; onPla
     try {
       const order = await placeOrderMutation.mutateAsync({ ...form, broker });
       setSuccess(`Order placed — ${order.status}${order.brokerOrderId ? ` (broker ref ${order.brokerOrderId})` : ''}.`);
-      setForm((prev) => ({ ...EMPTY, segment: prev.segment, exchange: prev.exchange, productType: prev.productType }));
+      setForm((prev) => ({ ...EMPTY, ...initial, segment: prev.segment, exchange: prev.exchange, productType: prev.productType }));
       onPlaced?.();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not place the order.');
@@ -106,16 +121,27 @@ export function PlaceOrderForm({ broker, onPlaced }: { broker: BrokerName; onPla
           onChange={(e) => set('tradingSymbol', e.target.value.toUpperCase())}
           required
           placeholder="RELIANCE"
+          disabled={lockInstrument}
         />
-        <Input label="Exchange" value={form.exchange} onChange={(e) => set('exchange', e.target.value.toUpperCase())} required />
-        <Select
-          label="Segment"
-          value={form.segment}
-          onChange={(v) => set('segment', v as OrderSegment)}
-          options={SEGMENTS.map((s) => ({ value: s, label: s }))}
-          searchable={false}
-          allowCustomValue={false}
+        <Input
+          label="Exchange"
+          value={form.exchange}
+          onChange={(e) => set('exchange', e.target.value.toUpperCase())}
+          required
+          disabled={lockInstrument}
         />
+        {lockInstrument ? (
+          <Input label="Segment" value={form.segment} disabled />
+        ) : (
+          <Select
+            label="Segment"
+            value={form.segment}
+            onChange={(v) => set('segment', v as OrderSegment)}
+            options={SEGMENTS.map((s) => ({ value: s, label: s }))}
+            searchable={false}
+            allowCustomValue={false}
+          />
+        )}
         <Select
           label="Product"
           value={form.productType}

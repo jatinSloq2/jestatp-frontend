@@ -4,8 +4,12 @@ import { useRef, useState } from 'react';
 import clsx from 'clsx';
 
 const DEFAULT_STRATEGY_TEMPLATE = `def on_bar(ctx):
-    # ctx gives you: ctx.close/open/high/low/volume, ctx.sma(n)/ema(n)/rsi(n)/atr(n),
+    # ctx gives you: ctx.close/open/high/low/volume,
+    # ctx.sma/ema/rsi/atr/vwap(period, offset=0) - offset=1 means "one bar back",
+    # ctx.macd()/.bbands()/.stochastic()/.supertrend() (each returns a small object, e.g. ctx.macd().line),
+    # ctx.custom("your indicator name") for a saved Custom Indicator,
     # ctx.position (None when flat), ctx.state (persisted across calls), ctx.params.
+    # crossed_above(a_now, b_now, a_prev, b_prev) / crossed_below(...) helpers are also available.
     if ctx.sma(20) is None or ctx.sma(50) is None:
         return None  # not enough history yet
 

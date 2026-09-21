@@ -241,7 +241,7 @@ export default function StrategyDetailPage() {
         )}
 
         <Card title="Backtest">
-          <StrategyBacktestSection strategyId={strategy.id} />
+          <StrategyBacktestSection strategyId={strategy.id} language={strategy.language} />
         </Card>
 
         <Card title="Version history">

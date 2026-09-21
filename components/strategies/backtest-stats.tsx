@@ -27,6 +27,7 @@ export function BacktestStatsGrid({ stats }: { stats: BacktestStats }) {
       label: 'Profit factor',
       value: stats.profitFactor === null ? '—' : stats.profitFactor.toFixed(2),
     },
+    { label: 'Sharpe ratio', value: stats.sharpeRatio === null ? '—' : stats.sharpeRatio.toFixed(2) },
     { label: 'Best trade', value: formatMoney(stats.bestTrade), className: pnlClass(stats.bestTrade) },
     { label: 'Worst trade', value: formatMoney(stats.worstTrade), className: pnlClass(stats.worstTrade) },
   ];

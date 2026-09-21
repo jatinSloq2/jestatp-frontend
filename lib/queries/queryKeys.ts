@@ -32,6 +32,15 @@ export const queryKeys = {
   funds: {
     detail: (broker: BrokerName) => ['funds', broker] as const,
   },
+  optionChain: {
+    expiries: (broker: BrokerName, underlying: string) => ['option-chain', 'expiries', broker, underlying] as const,
+    detail: (broker: BrokerName, underlying: string, expiry: string | null) =>
+      ['option-chain', 'detail', broker, underlying, expiry ?? 'nearest'] as const,
+  },
+  customIndicators: {
+    all: () => ['custom-indicators'] as const,
+    detail: (id: string) => ['custom-indicators', id] as const,
+  },
   strategies: {
     indicatorCatalog: () => ['strategies', 'indicator-catalog'] as const,
     list: (params?: { status?: StrategyStatus; segment?: Segment; page?: number; limit?: number }) =>
